@@ -2,7 +2,6 @@
 require_once __DIR__ . '/header.php';
 ?>
 
-
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -61,11 +60,14 @@ require_once __DIR__ . '/header.php';
             font-size: 14px;
             font-weight: 500;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
         .search-form button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(31,79,135,0.4);
         }
+        .search-form button:active { transform: translateY(0); }
 
         .table-container {
             background: white;
@@ -82,17 +84,30 @@ require_once __DIR__ . '/header.php';
             font-weight: 600;
             font-size: 14px;
         }
-        td { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; color: #2c3e50; }
+        td { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; color: #2c3e50; transition: background 0.3s ease; }
 
         /* Group (main) rows */
-        .group-row { cursor: pointer; transition: background 0.15s; }
+        .group-row { cursor: pointer; transition: background 0.3s ease; }
         .group-row:hover { background: #eef6ff !important; }
+        .group-row:hover td { background: #eef6ff; }
 
         /* Batch detail sub-rows */
         .batch-detail-row td {
             font-size: 13px;
             border-bottom: 1px dashed #d0e4f7;
-            padding: 8px 15px 8px 15px;
+            padding: 0; /* Changed for animation */
+            overflow: hidden;
+        }
+        
+        /* Sub-row animation wrapper */
+        .batch-anim-wrapper {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
+        }
+        .batch-detail-row.expanded .batch-anim-wrapper {
+            max-height: 100px; /* Adjust as needed */
+            padding: 8px 15px;
         }
 
         .toggle-icon {
@@ -100,8 +115,9 @@ require_once __DIR__ . '/header.php';
             color: #3498db;
             margin-left: 6px;
             display: inline-block;
-            transition: transform 0.2s;
+            transition: transform 0.3s ease;
         }
+        .rotated { transform: rotate(180deg); }
 
         .status-expired  { background: #fee; color: #e74c3c; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
         .status-lowstock { background: #ffeaa7; color: #f39c12; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; display: inline-block; }
@@ -119,13 +135,16 @@ require_once __DIR__ . '/header.php';
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-block;
+            position: relative;
+            overflow: hidden;
         }
         .btn-edit   { background: #3498db; color: white; }
-        .btn-edit:hover   { background: #2980b9; transform: translateY(-1px); }
+        .btn-edit:hover   { background: #2980b9; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(52,152,219,0.3); }
         .btn-delete { background: #e74c3c; color: white; }
-        .btn-delete:hover { background: #c0392b; transform: translateY(-1px); }
+        .btn-delete:hover { background: #c0392b; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(231,76,60,0.3); }
         .btn-stock  { background: #8e44ad; color: white; }
-        .btn-stock:hover  { background: #7d3c98; transform: translateY(-1px); }
+        .btn-stock:hover  { background: #7d3c98; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(142,68,173,0.3); }
+        .btn:active { transform: translateY(0); }
 
         .no-data { text-align: center; padding: 40px; color: #7f8c8d; font-size: 16px; }
 
@@ -135,51 +154,131 @@ require_once __DIR__ . '/header.php';
             gap: 20px;
             margin-bottom: 30px;
         }
-        .stat-card { background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-card { background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.3s ease; }
+        .stat-card:hover { transform: translateY(-5px); }
         .stat-card h3 { color: #7f8c8d; font-size: 14px; margin-bottom: 10px; }
         .stat-card .number { font-size: 32px; font-weight: bold; color: #2c3e50; }
 
-        /* Delete Modal */
+        /* Modal Styles */
         .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.5);
             z-index: 9999;
             align-items: center;
             justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(3px);
         }
-        .modal-overlay.active { display: flex; }
+        .modal-overlay.active { display: flex; opacity: 1; }
         .modal-box {
             background: white;
-            border-radius: 8px;
-            padding: 25px;
+            border-radius: 12px;
+            padding: 30px;
             width: 100%;
-            max-width: 380px;
+            max-width: 400px;
             margin: 0 20px;
             text-align: center;
+            transform: scale(0.7);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
-        .modal-box p { font-size: 15px; color: #2c3e50; margin-bottom: 6px; }
-        .modal-box small { font-size: 13px; color: #7f8c8d; }
-        .modal-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
-        .modal-buttons .btn-cancel {
-            padding: 8px 20px;
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-box p { font-size: 16px; color: #2c3e50; margin-bottom: 10px; }
+        .modal-box small { font-size: 13px; color: #7f8c8d; display: block; margin-bottom: 20px; }
+        .modal-buttons { display: flex; gap: 12px; justify-content: center; }
+        
+        .btn-cancel {
+            padding: 10px 25px;
             border: 1px solid #ddd;
             background: #f8f9fa;
             color: #2c3e50;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
+            transition: all 0.2s;
         }
-        .modal-buttons .btn-confirm {
-            padding: 8px 20px;
+        .btn-cancel:hover { background: #e9ecef; }
+        .btn-confirm {
+            padding: 10px 25px;
             border: none;
             background: #e74c3c;
             color: white;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-confirm:hover { background: #c0392b; transform: scale(1.05); }
+
+        /* Ripple Effect */
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-animation {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* Loading Spinner */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 15px;
+            backdrop-filter: blur(2px);
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Toast Notification */
+        #toastContainer {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10001;
+        }
+        .toast {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border-left: 5px solid #27ae60;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.error { border-left-color: #e74c3c; }
+        .toast-icon { font-size: 20px; }
+
+        /* Row Delete Animation */
+        .row-fade-out {
+            opacity: 0;
+            transform: translateX(50px);
+            transition: all 0.5s ease;
         }
 
         @media (max-width: 768px) {
@@ -191,6 +290,12 @@ require_once __DIR__ . '/header.php';
 </head>
 <body>
 
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <p style="color: #1f4f87; font-weight: 600;">Processing...</p>
+</div>
+
+<div id="toastContainer"></div>
 
 <div class="container">
     <div class="header-card">
@@ -222,13 +327,13 @@ require_once __DIR__ . '/header.php';
     </div>
 
     <div class="search-section">
-        <form method="GET" class="search-form">
+        <form method="GET" class="search-form" onsubmit="showLoading()">
             <input type="text" name="search"
                 value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>"
                 placeholder="🔍 Search medicine by name or description...">
             <button type="submit">Search</button>
             <?php if(!empty($_GET['search'])): ?>
-                <a href="index.php" style="padding:12px 30px; background:#95a5a6; color:white; text-decoration:none; border-radius:8px;">Clear</a>
+                <a href="index.php" class="btn" style="background:#95a5a6; color:white; padding: 12px 30px; border-radius: 8px;">Clear</a>
             <?php endif; ?>
         </form>
     </div>
@@ -322,6 +427,7 @@ require_once __DIR__ . '/header.php';
                     $batches = $conn->query("SELECT * FROM medicines WHERE name='{$sname}' AND label='{$slabel}' ORDER BY expiration_date ASC");
 
                     while ($b = $batches->fetch_assoc()) {
+                        $bid       = $b['id'];
                         $bexp      = $b['expiration_date'];
                         $b_exp     = $bexp && strtotime($bexp) < strtotime($today);
                         $b_soon    = !$b_exp && $bexp && strtotime($bexp) < strtotime($soon);
@@ -332,18 +438,26 @@ require_once __DIR__ . '/header.php';
                         $bcname    = htmlspecialchars($b['name'], ENT_QUOTES, 'UTF-8');
                         $b_added   = date('M d, Y', strtotime($b['created_at']));
 
-                        echo "<tr class='batch-detail-row' data-grp='{$gid}' style='display:none; {$b_bg}'>
-                            <td style='padding-left:36px; color:#7f8c8d;'>
-                                📦 <strong>Batch #{$b['batch_number']}</strong> &nbsp;·&nbsp; Added: {$b_added}
-                            </td>
-                            <td>—</td>
-                            <td><strong>{$b['quantity']}</strong> units</td>
-                            <td style='color:{$bexp_clr}; font-weight:600;'>{$bexp_ico} {$bexp_disp}</td>
-                            <td></td>
-                            <td class='action-buttons'>
-                                <a href='edit.php?id={$b['id']}' class='btn btn-edit'>✏️ Edit</a>
-                                <button type='button' class='btn btn-delete'
-                                    onclick=\"openModal({$b['id']}, '{$bcname}')\">🗑️ Delete</button>
+                        echo "<tr class='batch-detail-row' data-grp='{$gid}' id='row_{$bid}' style='display:none; {$b_bg}'>
+                            <td colspan='6' style='padding:0;'>
+                                <div class='batch-anim-wrapper'>
+                                    <div style='display:flex; align-items:center; justify-content:space-between;'>
+                                        <div style='flex:1;'>
+                                            📦 <strong>Batch #{$b['batch_number']}</strong> &nbsp;·&nbsp; Added: {$b_added}
+                                        </div>
+                                        <div style='flex:1; text-align:center;'>
+                                            <strong>{$b['quantity']}</strong> units
+                                        </div>
+                                        <div style='flex:1; text-align:center; color:{$bexp_clr}; font-weight:600;'>
+                                            {$bexp_ico} {$bexp_disp}
+                                        </div>
+                                        <div class='action-buttons' style='flex:1; justify-content:flex-end;'>
+                                            <a href='edit.php?id={$bid}' class='btn btn-edit'>✏️ Edit</a>
+                                            <button type='button' class='btn btn-delete'
+                                                onclick=\"openModal({$bid}, '{$bcname}')\">🗑️ Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>";
                     }
@@ -367,19 +481,66 @@ require_once __DIR__ . '/header.php';
             <button class="btn-cancel" onclick="closeModal()">Cancel</button>
             <form id="deleteForm" method="POST" action="delete.php" style="margin:0;">
                 <input type="hidden" name="id" id="modalId">
-                <button type="submit" name="delete" class="btn-confirm">Yes, Delete</button>
+                <button type="submit" name="delete" class="btn-confirm" onclick="confirmDelete(event)">Yes, Delete</button>
             </form>
         </div>
     </div>
 </div>
 
 <script>
+    // Ripple Effect
+    document.querySelectorAll('.btn, .search-form button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            let x = e.clientX - e.target.getBoundingClientRect().left;
+            let y = e.clientY - e.target.getBoundingClientRect().top;
+            let ripples = document.createElement('span');
+            ripples.className = 'ripple';
+            ripples.style.left = x + 'px';
+            ripples.style.top = y + 'px';
+            this.appendChild(ripples);
+            setTimeout(() => { ripples.remove() }, 600);
+        });
+    });
+
+    function showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+        toast.innerHTML = `
+            <span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span>
+            <span>${message}</span>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { toast.remove(); }, 400);
+        }, 4000);
+    }
+
     function toggleBatch(id) {
         const rows = document.querySelectorAll('[data-grp="' + id + '"]');
         const icon = document.getElementById('icon_' + id);
-        const anyVisible = Array.from(rows).some(r => r.style.display !== 'none');
-        rows.forEach(r => { r.style.display = anyVisible ? 'none' : 'table-row'; });
-        if (icon) icon.textContent = anyVisible ? '▼' : '▲';
+        const isExpanding = rows[0].style.display === 'none';
+
+        rows.forEach(r => {
+            if (isExpanding) {
+                r.style.display = 'table-row';
+                setTimeout(() => r.classList.add('expanded'), 10);
+            } else {
+                r.classList.remove('expanded');
+                setTimeout(() => { r.style.display = 'none'; }, 400);
+            }
+        });
+
+        if (icon) {
+            if (isExpanding) icon.classList.add('rotated');
+            else icon.classList.remove('rotated');
+        }
     }
 
     function openModal(id, name) {
@@ -387,12 +548,38 @@ require_once __DIR__ . '/header.php';
         document.getElementById('modalName').textContent = name;
         document.getElementById('deleteModal').classList.add('active');
     }
+
     function closeModal() {
         document.getElementById('deleteModal').classList.remove('active');
     }
+
+    function confirmDelete(e) {
+        e.preventDefault();
+        const id = document.getElementById('modalId').value;
+        const row = document.getElementById('row_' + id);
+        
+        closeModal();
+        if (row) {
+            row.classList.add('row-fade-out');
+            setTimeout(() => {
+                showLoading();
+                document.getElementById('deleteForm').submit();
+            }, 500);
+        } else {
+            showLoading();
+            document.getElementById('deleteForm').submit();
+        }
+    }
+
     document.getElementById('deleteModal').addEventListener('click', function(e) {
         if (e.target === this) closeModal();
     });
+
+    // Check for success/error in URL and show toast
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('msg')) {
+        showToast(urlParams.get('msg'), urlParams.get('type') || 'success');
+    }
 </script>
 
 </body>

@@ -8,7 +8,6 @@ $prefill_label = isset($_GET['label']) ? htmlspecialchars($_GET['label'], ENT_QU
 $is_new_batch  = ($prefill_name !== '');
 ?>
 
-
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -30,12 +29,12 @@ $is_new_batch  = ($prefill_name !== '');
             border-radius: 15px;
             padding: 35px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            animation: fadeIn 0.5s ease;
+            animation: fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .form-header {
@@ -44,7 +43,8 @@ $is_new_batch  = ($prefill_name !== '');
         }
         .form-header h2 { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
         .form-header p  { color: #7f8c8d; font-size: 14px; }
-        .form-header .icon { font-size: 50px; margin-bottom: 10px; }
+        .form-header .icon { font-size: 50px; margin-bottom: 10px; transition: transform 0.5s ease; }
+        .form-card:hover .icon { transform: rotate(15deg) scale(1.1); }
 
         /* "Adding new batch for" banner */
         .batch-banner {
@@ -58,8 +58,12 @@ $is_new_batch  = ($prefill_name !== '');
             gap: 10px;
             font-size: 14px;
             color: #1e8449;
+            animation: slideInLeft 0.5s ease forwards;
         }
-        .batch-banner strong { font-size: 15px; }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
 
         .form-group { margin-bottom: 20px; }
 
@@ -85,6 +89,7 @@ $is_new_batch  = ($prefill_name !== '');
             outline: none;
             border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+            transform: translateY(-1px);
         }
 
         .btn-submit {
@@ -99,43 +104,74 @@ $is_new_batch  = ($prefill_name !== '');
             cursor: pointer;
             transition: all 0.3s ease;
             margin-top: 10px;
+            position: relative;
+            overflow: hidden;
         }
         .btn-submit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(31,79,135,0.4);
+            box-shadow: 0 8px 20px rgba(31,79,135,0.4);
         }
         .btn-submit:active { transform: translateY(0); }
 
-        .alert {
-            padding: 15px 20px;
+        /* Ripple Effect */
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-animation {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* Loading Spinner */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 15px;
+            backdrop-filter: blur(2px);
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Toast Notification */
+        #toastContainer {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10001;
+        }
+        .toast {
+            background: white;
+            padding: 15px 25px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             display: flex;
             align-items: center;
-            gap: 10px;
-            animation: slideIn 0.3s ease;
+            gap: 12px;
+            margin-top: 10px;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border-left: 5px solid #27ae60;
         }
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to   { transform: translateX(0); opacity: 1; }
-        }
-        .alert-success {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            color: #155724;
-            border-left: 4px solid #28a745;
-        }
-        .alert-error {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            color: #721c24;
-            border-left: 4px solid #dc3545;
-        }
-        .alert .close {
-            margin-left: auto;
-            cursor: pointer;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        .alert .close:hover { opacity: 0.7; }
+        .toast.show { transform: translateX(0); }
+        .toast.error { border-left-color: #e74c3c; }
+        .toast-icon { font-size: 20px; }
 
         .info-box {
             background: #f8f9fa;
@@ -158,6 +194,12 @@ $is_new_batch  = ($prefill_name !== '');
 </head>
 <body>
 
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <p style="color: #1f4f87; font-weight: 600;">Saving medicine...</p>
+</div>
+
+<div id="toastContainer"></div>
 
 <div class="container">
     <div class="form-card">
@@ -169,8 +211,7 @@ $is_new_batch  = ($prefill_name !== '');
                 : 'Enter the details of the medicine to add to inventory'; ?></p>
         </div>
 
-        <?php
-        if ($is_new_batch): ?>
+        <?php if ($is_new_batch): ?>
         <div class="batch-banner">
             <span>📦</span>
             <div>
@@ -181,6 +222,8 @@ $is_new_batch  = ($prefill_name !== '');
         <?php endif; ?>
 
         <?php
+        $status_msg = '';
+        $status_type = 'success';
         if (isset($_POST['add'])) {
             $n = mysqli_real_escape_string($conn, trim($_POST['name']       ?? ''));
             $l = mysqli_real_escape_string($conn, trim($_POST['Description'] ?? ''));
@@ -194,7 +237,6 @@ $is_new_batch  = ($prefill_name !== '');
             if (empty($e)) $errors[] = "Expiration date is required.";
 
             if (empty($errors)) {
-                // Get next batch number for this medicine
                 $bn_res = $conn->query("SELECT MAX(batch_number) AS max_bn FROM medicines WHERE name = '$n' AND label = '$l'");
                 $next_bn = 1;
                 if ($bn_res && $row = $bn_res->fetch_assoc()) {
@@ -206,35 +248,22 @@ $is_new_batch  = ($prefill_name !== '');
 
                 if ($conn->query($sql)) {
                     $new_id = $conn->insert_id;
-                    // Log the new batch addition
                     $conn->query("INSERT INTO logs (medicine_id, quantity, action)
                                   VALUES ($new_id, $q, 'New Batch Added')");
-
-                    echo "<div class='alert alert-success' id='alertMessage'>
-                            <span>✅</span>
-                            <span>" . ($is_new_batch ? "New batch added for <strong>$n</strong>" : "Medicine <strong>$n</strong> added") . "! Qty: <strong>$q</strong> units.</span>
-                            <span class='close' onclick='this.parentElement.style.display=\"none\"'>&times;</span>
-                          </div>";
-                    echo "<script>setTimeout(function(){document.getElementById('addForm').reset();},800);</script>";
+                    $status_msg = ($is_new_batch ? "New batch added for $n" : "Medicine $n added") . "! Qty: $q units.";
+                    $status_type = 'success';
                 } else {
-                    echo "<div class='alert alert-error' id='alertMessage'>
-                            <span>❌</span>
-                            <span>Error: " . htmlspecialchars($conn->error) . "</span>
-                            <span class='close' onclick='this.parentElement.style.display=\"none\"'>&times;</span>
-                          </div>";
+                    $status_msg = "Error: " . $conn->error;
+                    $status_type = 'error';
                 }
             } else {
-                foreach ($errors as $err) {
-                    echo "<div class='alert alert-error'>
-                            <span>⚠️</span>
-                            <span>$err</span>
-                          </div>";
-                }
+                $status_msg = implode(" ", $errors);
+                $status_type = 'error';
             }
         }
         ?>
 
-        <form method="POST" id="addForm">
+        <form method="POST" id="addForm" onsubmit="handleSubmit(event)">
             <div class="form-group">
                 <label>Medicine Name <span class="required">*</span></label>
                 <input type="text" name="name"
@@ -276,9 +305,53 @@ $is_new_batch  = ($prefill_name !== '');
 </div>
 
 <script>
-    setTimeout(function() {
-        document.querySelectorAll('.alert').forEach(function(a) { a.style.display = 'none'; });
-    }, 5000);
+    // Ripple Effect
+    document.querySelectorAll('.btn-submit').forEach(button => {
+        button.addEventListener('click', function(e) {
+            let x = e.clientX - e.target.getBoundingClientRect().left;
+            let y = e.clientY - e.target.getBoundingClientRect().top;
+            let ripples = document.createElement('span');
+            ripples.className = 'ripple';
+            ripples.style.left = x + 'px';
+            ripples.style.top = y + 'px';
+            this.appendChild(ripples);
+            setTimeout(() => { ripples.remove() }, 600);
+        });
+    });
+
+    function showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+        toast.innerHTML = `
+            <span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span>
+            <span>${message}</span>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { toast.remove(); }, 400);
+        }, 5000);
+    }
+
+    function handleSubmit(e) {
+        showLoading();
+    }
+
+    // PHP passed status
+    <?php if ($status_msg): ?>
+        window.onload = function() {
+            showToast("<?php echo addslashes($status_msg); ?>", "<?php echo $status_type; ?>");
+            <?php if ($status_type === 'success'): ?>
+                setTimeout(() => { document.getElementById('addForm').reset(); }, 500);
+            <?php endif; ?>
+        };
+    <?php endif; ?>
 </script>
 
 </body>

@@ -16,13 +16,10 @@ if (isset($_POST['use'])) {
     if (empty($med_name)) {
         $alert      = "Please select a medicine.";
         $alert_type = "error";
-
     } elseif ($qty_needed <= 0) {
         $alert      = "Please enter a valid quantity (minimum 1 unit).";
         $alert_type = "error";
-
     } else {
-        // Total non-expired available stock
         $chk = $conn->query("
             SELECT SUM(quantity) AS avail
             FROM medicines
@@ -32,11 +29,9 @@ if (isset($_POST['use'])) {
         $avail = (int)($chk ? $chk->fetch_assoc()['avail'] : 0);
 
         if ($avail < $qty_needed) {
-            $alert      = "Insufficient non-expired stock! Only <strong>$avail</strong> unit(s) available for <strong>" . htmlspecialchars($med_name) . "</strong>.";
+            $alert      = "Insufficient non-expired stock! Only $avail unit(s) available.";
             $alert_type = "error";
-
         } else {
-            // FIFO: pull from batches with earliest expiration date first
             $batches = $conn->query("
                 SELECT *
                 FROM medicines
@@ -62,13 +57,7 @@ if (isset($_POST['use'])) {
             }
 
             $detail_str = implode('<br>• ', $details);
-            $new_total  = $avail - $qty_needed;
-            $stock_note = $new_total <= 5
-                ? "⚠️ Low stock alert: only <strong>{$new_total}</strong> unit(s) remaining."
-                : "Remaining stock: <strong>{$new_total}</strong> unit(s).";
-
-            $alert      = "✅ <strong>{$qty_needed} unit(s)</strong> of <strong>" . htmlspecialchars($med_name) . "</strong> dispensed to patient.<br>"
-                        . "• {$detail_str}<br>{$stock_note}";
+            $alert      = "<strong>{$qty_needed} unit(s)</strong> of " . htmlspecialchars($med_name) . " dispensed.<br>• {$detail_str}";
             $alert_type = "success";
         }
     }
@@ -89,7 +78,6 @@ $meds_query = $conn->query("
     ORDER BY name ASC");
 ?>
 
-
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -105,15 +93,16 @@ $meds_query = $conn->query("
         .form-card {
             background: white; border-radius: 15px; padding: 35px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            animation: fadeIn 0.5s ease;
+            animation: fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(30px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .form-header { text-align: center; margin-bottom: 30px; }
-        .form-header .icon { font-size: 50px; margin-bottom: 10px; }
+        .form-header .icon { font-size: 50px; margin-bottom: 10px; transition: transform 0.5s ease; }
+        .form-card:hover .icon { transform: rotate(-15deg) scale(1.1); }
         .form-header h2 { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
         .form-header p  { color: #7f8c8d; font-size: 14px; }
 
@@ -134,6 +123,7 @@ $meds_query = $conn->query("
         select:focus, input:focus {
             outline: none; border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+            transform: translateY(-1px);
         }
 
         /* Stock Info Panel */
@@ -143,10 +133,13 @@ $meds_query = $conn->query("
             border-left: 4px solid #3498db;
             background: #f0f8ff;
             font-size: 14px;
+            animation: slideDown 0.4s ease;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .stock-panel .sp-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-        .stock-panel .sp-row:last-child { margin-bottom: 0; }
-        .stock-panel .sp-label { color: #7f8c8d; }
         .stock-panel .sp-value { font-weight: 700; color: #2c3e50; }
         .stock-panel.warn  { border-left-color: #f39c12; background: #fff8e7; }
         .stock-panel.danger{ border-left-color: #e74c3c; background: #ffeaea; }
@@ -159,7 +152,9 @@ $meds_query = $conn->query("
             padding: 5px 10px; border-radius: 5px;
             background: rgba(255,255,255,0.6);
             margin-bottom: 4px; font-size: 12px;
+            transition: transform 0.2s ease;
         }
+        .batch-item:hover { transform: scale(1.02); }
         .batch-item.b-expired { background: #ffeaea; color: #e74c3c; }
         .batch-item.b-soon    { background: #fff3cd; color: #856404; }
         .batch-item.b-ok      { background: #d5f4e6; color: #1a7a4a; }
@@ -170,10 +165,9 @@ $meds_query = $conn->query("
             border-radius: 8px; padding: 12px 15px;
             margin-bottom: 16px; font-size: 13px; color: #856404;
             display: flex; align-items: flex-start; gap: 8px;
+            animation: fadeIn 0.3s ease;
         }
-        .warn-box.danger-box {
-            background: #ffeaea; border-left-color: #e74c3c; color: #c0392b;
-        }
+        .warn-box.danger-box { background: #ffeaea; border-left-color: #e74c3c; color: #c0392b; }
         .fifo-note {
             background: #e8f4fd; border-left: 4px solid #3498db;
             border-radius: 8px; padding: 12px 15px;
@@ -189,51 +183,59 @@ $meds_query = $conn->query("
             font-size: 16px; font-weight: 600;
             border-radius: 8px; cursor: pointer;
             transition: all 0.3s ease; margin-top: 10px;
+            position: relative; overflow: hidden;
         }
         .btn-dispense:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231,76,60,0.4);
+            box-shadow: 0 8px 20px rgba(231,76,60,0.4);
         }
-        .btn-dispense:disabled {
-            background: #95a5a6; cursor: not-allowed; transform: none;
-        }
+        .btn-dispense:active { transform: translateY(0); }
+        .btn-dispense:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; }
 
-        /* Alert Messages */
-        .alert {
-            padding: 15px 20px; border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex; align-items: flex-start;
-            gap: 10px; animation: slideIn 0.3s ease;
-            line-height: 1.6;
+        /* Ripple Effect */
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
         }
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to   { transform: translateX(0); opacity: 1; }
+        @keyframes ripple-animation { to { transform: scale(4); opacity: 0; } }
+
+        /* Loading Spinner */
+        #loadingOverlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(255,255,255,0.7);
+            z-index: 10000; align-items: center; justify-content: center;
+            flex-direction: column; gap: 15px; backdrop-filter: blur(2px);
         }
-        .alert-success {
-            background: linear-gradient(135deg, #d4edda, #c3e6cb);
-            color: #155724; border-left: 4px solid #28a745;
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid #f3f3f3; border-top: 5px solid #3498db;
+            border-radius: 50%; animation: spin 1s linear infinite;
         }
-        .alert-error {
-            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-            color: #721c24; border-left: 4px solid #dc3545;
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Toast Notification */
+        #toastContainer { position: fixed; bottom: 30px; right: 30px; z-index: 10001; }
+        .toast {
+            background: white; padding: 15px 25px; border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex; align-items: center; gap: 12px; margin-top: 10px;
+            transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            border-left: 5px solid #27ae60;
         }
-        .alert .close {
-            margin-left: auto; cursor: pointer;
-            font-size: 20px; font-weight: bold; flex-shrink: 0;
-        }
-        .alert .close:hover { opacity: 0.7; }
+        .toast.show { transform: translateX(0); }
+        .toast.error { border-left-color: #e74c3c; }
 
         .info-box {
             background: #f8f9fa; border-radius: 8px;
             padding: 15px; margin-top: 20px;
             text-align: center; border: 1px solid #e0e0e0;
         }
-        .info-box p { color: #7f8c8d; font-size: 13px; }
         .info-box a { color: #3498db; text-decoration: none; font-weight: 500; }
-        .info-box a:hover { text-decoration: underline; }
-
-        input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
 
         @media (max-width: 768px) {
             .container { margin: 20px auto; }
@@ -244,6 +246,12 @@ $meds_query = $conn->query("
 </head>
 <body>
 
+<div id="loadingOverlay">
+    <div class="spinner"></div>
+    <p style="color: #1f4f87; font-weight: 600;">Processing dispensing...</p>
+</div>
+
+<div id="toastContainer"></div>
 
 <div class="container">
     <div class="form-card">
@@ -253,26 +261,17 @@ $meds_query = $conn->query("
             <p>Dispenses from the earliest-expiring batch first (FIFO)</p>
         </div>
 
-        <?php if ($alert): ?>
-        <div class="alert alert-<?php echo $alert_type; ?>" id="alertMessage">
-            <div><?php echo $alert; ?></div>
-            <span class="close" onclick="this.parentElement.style.display='none'">&times;</span>
-        </div>
-        <?php endif; ?>
-
         <div class="fifo-note">
             <span>ℹ️</span>
-            <span><strong>FIFO Active:</strong> When you dispense, stock is taken from the batch with the earliest expiration date first.</span>
+            <span><strong>FIFO Active:</strong> Stock is taken from the oldest expiration batch first.</span>
         </div>
 
-        <form method="POST" id="dispenseForm">
+        <form method="POST" id="dispenseForm" onsubmit="handleSubmit(event)">
             <div class="form-group">
                 <label>Select Medicine <span class="required">*</span></label>
                 <select name="med_name" id="medicineSelect" required onchange="updateStockPanel()">
                     <option value="">-- Select a medicine --</option>
                     <?php
-                    /* Build option data. We'll store batch info as JSON in data-attr. */
-                    $med_options = [];
                     if ($meds_query && $meds_query->num_rows > 0) {
                         while ($m = $meds_query->fetch_assoc()) {
                             $oname    = htmlspecialchars($m['name'],  ENT_QUOTES, 'UTF-8');
@@ -281,81 +280,50 @@ $meds_query = $conn->query("
                             $expired  = (int)$m['expired_qty'];
                             $next_exp = $m['next_exp'];
 
-                            // Fetch individual batches for this medicine (for the panel)
                             $sname  = mysqli_real_escape_string($conn, $m['name']);
                             $slabel = mysqli_real_escape_string($conn, (string)$m['label']);
-                            $bq     = $conn->query("
-                                SELECT quantity, expiration_date
-                                FROM medicines
-                                WHERE name = '$sname' AND label = '$slabel' AND quantity > 0
-                                ORDER BY expiration_date ASC");
+                            $bq     = $conn->query("SELECT quantity, expiration_date FROM medicines WHERE name = '$sname' AND label = '$slabel' AND quantity > 0 ORDER BY expiration_date ASC");
 
                             $batches_info = [];
                             while ($brow = $bq->fetch_assoc()) {
-                                $batches_info[] = [
-                                    'qty' => (int)$brow['quantity'],
-                                    'exp' => $brow['expiration_date'],
-                                ];
-                            }
-
-                            $suffix = '';
-                            if ($avail <= 0) {
-                                $suffix = ' (ALL EXPIRED — cannot dispense)';
-                            } elseif ($expired > 0) {
-                                $suffix = ' (' . $expired . ' units expired, will be skipped)';
-                            } elseif ($avail <= 5) {
-                                $suffix = ' (LOW STOCK)';
+                                $batches_info[] = ['qty' => (int)$brow['quantity'], 'exp' => $brow['expiration_date']];
                             }
 
                             $data = htmlspecialchars(json_encode([
-                                'avail'    => $avail,
-                                'expired'  => $expired,
-                                'next_exp' => $next_exp,
-                                'batches'  => $batches_info,
-                                'label'    => $m['label'],
+                                'avail' => $avail, 'expired' => $expired, 'next_exp' => $next_exp, 'batches' => $batches_info
                             ]), ENT_QUOTES, 'UTF-8');
 
                             $disabled = ($avail <= 0) ? 'disabled' : '';
-                            $style    = ($avail <= 0)
-                                ? "color:#e74c3c;"
-                                : ($avail <= 5 ? "color:#f39c12;" : "");
+                            $style = ($avail <= 0) ? "color:#e74c3c;" : ($avail <= 5 ? "color:#f39c12;" : "");
 
-                            echo "<option value='{$oname}' data-info='{$data}' $disabled style='{$style}'>"
-                               . "{$oname} ({$olabel}) — {$avail} avail{$suffix}"
-                               . "</option>";
+                            echo "<option value='{$oname}' data-info='{$data}' $disabled style='{$style}'>{$oname} ({$olabel}) — {$avail} avail</option>";
                         }
-                    } else {
-                        echo "<option value='' disabled>No medicines in inventory</option>";
                     }
                     ?>
                 </select>
             </div>
 
-            <!-- Dynamic stock panel -->
             <div id="stockPanel" class="stock-panel">
                 <div class="sp-row">
-                    <span class="sp-label">Available (non-expired):</span>
+                    <span>Available (non-expired):</span>
                     <span class="sp-value" id="panelAvail">—</span>
                 </div>
                 <div class="sp-row" id="panelExpiredRow" style="display:none;">
-                    <span class="sp-label">⚠️ Expired (will be skipped):</span>
+                    <span style="color:#e74c3c;">⚠️ Expired (skipped):</span>
                     <span class="sp-value" style="color:#e74c3c;" id="panelExpired">—</span>
                 </div>
                 <div class="sp-row">
-                    <span class="sp-label">Next expiry date (FIFO):</span>
+                    <span>Next expiry (FIFO):</span>
                     <span class="sp-value" id="panelNextExp">—</span>
                 </div>
                 <div class="batch-list" id="batchList"></div>
             </div>
 
-            <!-- Warnings injected by JS -->
             <div id="warnArea"></div>
 
             <div class="form-group">
                 <label>Quantity to Dispense <span class="required">*</span></label>
-                <input type="number" name="qty" id="qty" required min="1"
-                       placeholder="Select a medicine first" disabled
-                       oninput="validateQty()">
+                <input type="number" name="qty" id="qty" required min="1" placeholder="Select medicine first" disabled oninput="validateQty()">
                 <small id="qtyMsg" style="color:#e74c3c; display:none; margin-top:5px;"></small>
             </div>
 
@@ -365,145 +333,111 @@ $meds_query = $conn->query("
         </form>
 
         <div class="info-box">
-            <p>📋 <strong>Important:</strong> Always verify medicine and dosage before dispensing.</p>
-            <p style="margin-top:10px;">📊 <a href="logs.php">View Dispensing Logs →</a></p>
-            <p style="margin-top:5px;">🏥 <a href="index.php">Back to Inventory →</a></p>
+            <p>📋 <strong>Important:</strong> Verify medicine and dosage before dispensing.</p>
+            <p style="margin-top:10px;">📊 <a href="index.php">Back to Inventory →</a></p>
         </div>
     </div>
 </div>
 
 <script>
-const today = new Date().toISOString().split('T')[0];
-const soon  = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
-
-function formatDate(dateStr) {
-    if (!dateStr) return 'N/A';
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function updateStockPanel() {
-    const sel      = document.getElementById('medicineSelect');
-    const panel    = document.getElementById('stockPanel');
-    const qtyInput = document.getElementById('qty');
-    const btn      = document.getElementById('dispenseBtn');
-    const warnArea = document.getElementById('warnArea');
-    const batchList= document.getElementById('batchList');
-
-    warnArea.innerHTML = '';
-    batchList.innerHTML = '';
-
-    if (!sel.value) {
-        panel.style.display = 'none';
-        panel.className = 'stock-panel';
-        qtyInput.disabled = true;
-        qtyInput.value = '';
-        qtyInput.placeholder = 'Select a medicine first';
-        btn.disabled = true;
-        return;
-    }
-
-    const opt  = sel.options[sel.selectedIndex];
-    const info = JSON.parse(opt.dataset.info || '{}');
-    const avail   = info.avail   || 0;
-    const expired = info.expired || 0;
-    const nextExp = info.next_exp || null;
-    const batches = info.batches || [];
-
-    // Panel values
-    document.getElementById('panelAvail').textContent = avail + ' unit(s)';
-    document.getElementById('panelExpired').textContent = expired + ' unit(s)';
-    document.getElementById('panelExpiredRow').style.display = expired > 0 ? 'flex' : 'none';
-    document.getElementById('panelNextExp').textContent = formatDate(nextExp);
-
-    // Panel style
-    panel.style.display = 'block';
-    if (avail <= 0) {
-        panel.className = 'stock-panel danger';
-    } else if (avail <= 5 || (nextExp && nextExp <= soon)) {
-        panel.className = 'stock-panel warn';
-    } else {
-        panel.className = 'stock-panel';
-    }
-
-    // Batch list
-    if (batches.length > 0) {
-        let html = '<div class="batch-list-title">📦 Batches (FIFO order — oldest expiry first):</div>';
-        batches.forEach(function(b) {
-            let cls = 'b-ok', tag = '✓ Valid';
-            if (b.exp < today) { cls = 'b-expired'; tag = '⚠️ Expired (skip)'; }
-            else if (b.exp < soon) { cls = 'b-soon'; tag = '📅 Expiring Soon'; }
-            html += "<div class='batch-item " + cls + "'>"
-                  + "<span>Exp: " + formatDate(b.exp) + "</span>"
-                  + "<span>" + b.qty + " unit(s) &nbsp;|&nbsp; " + tag + "</span>"
-                  + "</div>";
+    // Ripple effect
+    document.querySelectorAll('.btn-dispense').forEach(button => {
+        button.addEventListener('click', function(e) {
+            let x = e.clientX - e.target.getBoundingClientRect().left;
+            let y = e.clientY - e.target.getBoundingClientRect().top;
+            let ripples = document.createElement('span');
+            ripples.className = 'ripple';
+            ripples.style.left = x + 'px'; ripples.style.top = y + 'px';
+            this.appendChild(ripples);
+            setTimeout(() => { ripples.remove() }, 600);
         });
-        batchList.innerHTML = html;
+    });
+
+    function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+        toast.innerHTML = `<span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span><span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 400);
+        }, 5000);
     }
 
-    // Warnings
-    let warns = '';
-    if (expired > 0) {
-        warns += "<div class='warn-box'><span>⚠️</span><div><strong>Expired batches detected:</strong> "
-               + expired + " unit(s) are expired and will be automatically skipped during dispensing.</div></div>";
+    function handleSubmit() { showLoading(); }
+
+    const today = new Date().toISOString().split('T')[0];
+    const soon  = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
+
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const d = new Date(dateStr + 'T00:00:00');
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
-    if (nextExp && nextExp >= today && nextExp <= soon) {
-        warns += "<div class='warn-box'><span>📅</span><div><strong>Expiring soon:</strong> The oldest available batch expires on "
-               + formatDate(nextExp) + ".</div></div>";
+
+    function updateStockPanel() {
+        const sel = document.getElementById('medicineSelect');
+        const panel = document.getElementById('stockPanel');
+        const qtyInput = document.getElementById('qty');
+        const btn = document.getElementById('dispenseBtn');
+        const warnArea = document.getElementById('warnArea');
+        const batchList = document.getElementById('batchList');
+
+        warnArea.innerHTML = ''; batchList.innerHTML = '';
+
+        if (!sel.value) {
+            panel.style.display = 'none'; qtyInput.disabled = true; qtyInput.value = ''; btn.disabled = true; return;
+        }
+
+        const info = JSON.parse(sel.options[sel.selectedIndex].dataset.info || '{}');
+        const avail = info.avail || 0;
+        const expired = info.expired || 0;
+        const nextExp = info.next_exp || null;
+        const batches = info.batches || [];
+
+        document.getElementById('panelAvail').textContent = avail + ' unit(s)';
+        document.getElementById('panelExpired').textContent = expired + ' unit(s)';
+        document.getElementById('panelExpiredRow').style.display = expired > 0 ? 'flex' : 'none';
+        document.getElementById('panelNextExp').textContent = formatDate(nextExp);
+
+        panel.style.display = 'block';
+        panel.className = 'stock-panel' + (avail <= 0 ? ' danger' : (avail <= 5 ? ' warn' : ''));
+
+        if (batches.length > 0) {
+            let html = '<div class="batch-list-title">📦 Batches (FIFO Order):</div>';
+            batches.forEach(b => {
+                let cls = 'b-ok', tag = '✓ Valid';
+                if (b.exp < today) { cls = 'b-expired'; tag = '⚠️ Expired'; }
+                else if (b.exp < soon) { cls = 'b-soon'; tag = '📅 Expiring Soon'; }
+                html += `<div class='batch-item ${cls}'><span>Exp: ${formatDate(b.exp)}</span><span>${b.qty} unit(s)</span></div>`;
+            });
+            batchList.innerHTML = html;
+        }
+
+        qtyInput.disabled = avail <= 0;
+        if (!qtyInput.disabled) { qtyInput.max = avail; validateQty(); }
     }
-    warnArea.innerHTML = warns;
 
-    // Enable/disable qty input and button
-    if (avail <= 0) {
-        qtyInput.disabled = true;
-        qtyInput.placeholder = 'No non-expired stock available';
-        btn.disabled = true;
-    } else {
-        qtyInput.disabled = false;
-        qtyInput.max = avail;
-        qtyInput.placeholder = 'Enter quantity (max ' + avail + ')';
-        validateQty();
+    function validateQty() {
+        const qty = parseInt(document.getElementById('qty').value) || 0;
+        const sel = document.getElementById('medicineSelect');
+        const info = JSON.parse(sel.options[sel.selectedIndex].dataset.info || '{}');
+        const avail = info.avail || 0;
+        const msg = document.getElementById('qtyMsg');
+        const btn = document.getElementById('dispenseBtn');
+
+        if (qty <= 0) { msg.textContent = '⚠️ Enter at least 1 unit.'; msg.style.display = 'block'; btn.disabled = true; }
+        else if (qty > avail) { msg.textContent = '⚠️ Max available is ' + avail; msg.style.display = 'block'; btn.disabled = true; }
+        else { msg.style.display = 'none'; btn.disabled = false; }
     }
-}
 
-function validateQty() {
-    const sel     = document.getElementById('medicineSelect');
-    const qty     = parseInt(document.getElementById('qty').value) || 0;
-    const msg     = document.getElementById('qtyMsg');
-    const btn     = document.getElementById('dispenseBtn');
-    const opt     = sel.options[sel.selectedIndex];
-
-    if (!sel.value || !opt) { btn.disabled = true; return; }
-
-    const info  = JSON.parse(opt.dataset.info || '{}');
-    const avail = info.avail || 0;
-
-    if (qty <= 0) {
-        msg.textContent = '⚠️ Please enter at least 1 unit.';
-        msg.style.display = 'block';
-        btn.disabled = true;
-    } else if (qty > avail) {
-        msg.textContent = '⚠️ Not enough non-expired stock! Only ' + avail + ' unit(s) available.';
-        msg.style.display = 'block';
-        btn.disabled = true;
-    } else {
-        msg.style.display = 'none';
-        btn.disabled = false;
-    }
-}
-
-// Auto-hide alert after 8 seconds
-setTimeout(function() {
-    const a = document.getElementById('alertMessage');
-    if (a) a.style.display = 'none';
-}, 8000);
-
-// Reload page 3 seconds after successful dispense to refresh all data
-<?php if ($alert_type === 'success'): ?>
-setTimeout(function() { location.reload(); }, 3500);
-<?php endif; ?>
-
-document.addEventListener('DOMContentLoaded', updateStockPanel);
+    <?php if ($alert): ?>
+        window.onload = () => showToast("<?php echo addslashes($alert); ?>", "<?php echo $alert_type; ?>");
+    <?php endif; ?>
 </script>
 
 </body>
