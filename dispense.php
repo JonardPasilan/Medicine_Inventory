@@ -57,7 +57,7 @@ if (isset($_POST['use'])) {
                               VALUES ({$b['id']}, $take, 'Released to patient')");
 
                 $exp_fmt = date('M d, Y', strtotime($b['expiration_date']));
-                $details[] = "Batch #{$b['id']} (Exp: {$exp_fmt}) — {$take} unit(s)";
+                $details[] = "Batch #{$b['batch_number']} (Exp: {$exp_fmt}) — {$take} unit(s)";
                 $remaining -= $take;
             }
 
@@ -236,8 +236,6 @@ $meds_query = $conn->query("
         input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
 
         @media (max-width: 768px) {
-            .nav { padding: 6px 8px; gap: 4px 6px; }
-            .nav a { font-size: 12px; padding: 5px 10px; }
             .container { margin: 20px auto; }
             .form-card { padding: 25px; }
             .form-header h2 { font-size: 24px; }

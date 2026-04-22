@@ -17,23 +17,6 @@ require_once __DIR__ . '/header.php';
             min-height: 100vh;
         }
 
-        .nav {
-            background: #2c3e50;
-            padding: 8px 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: sticky; top: 0; z-index: 999;
-            display: flex; flex-wrap: wrap;
-            justify-content: center; align-items: center;
-            gap: 6px 10px;
-        }
-        .nav a {
-            color: white; text-decoration: none;
-            font-size: 13px; font-weight: 600;
-            padding: 6px 12px; border-radius: 6px;
-            transition: background 0.2s ease, transform 0.2s ease;
-            display: inline-block; white-space: nowrap;
-        }
-        .nav a:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
 
         .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
 
@@ -162,12 +145,6 @@ require_once __DIR__ . '/header.php';
 </head>
 <body>
 
-<div class="nav">
-    <a href="index.php">🏠 Dashboard</a>
-    <a href="add.php">➕ Add Medicine</a>
-    <a href="dispense.php">💊 Dispense</a>
-    <a href="logs.php">📋 Logs</a>
-</div>
 
 <div class="container">
     <div class="header-card">
@@ -288,6 +265,7 @@ require_once __DIR__ . '/header.php';
                     l.medicine_id,
                     m.name,
                     m.label,
+                    m.batch_number,
                     m.expiration_date
                 FROM logs l
                 LEFT JOIN medicines m ON l.medicine_id = m.id
@@ -325,10 +303,10 @@ require_once __DIR__ . '/header.php';
                         $mlabel = htmlspecialchars((string)$row['label'], ENT_QUOTES, 'UTF-8');
                         $med_display = "<div class='medicine-name'>{$mname}</div>
                                         <small style='color:#7f8c8d;'>{$mlabel}</small>
-                                        <div class='batch-info'>Batch #{$row['medicine_id']}</div>";
+                                        <div class='batch-info'>Batch #{$row['batch_number']} (ID: {$row['medicine_id']})</div>";
                     } else {
                         $med_display = "<div class='medicine-name' style='color:#95a5a6;'>Deleted Medicine</div>
-                                        <div class='batch-info'>Batch #{$row['medicine_id']}</div>";
+                                        <div class='batch-info'>Batch (ID: {$row['medicine_id']})</div>";
                     }
 
                     // Expiry date for the batch

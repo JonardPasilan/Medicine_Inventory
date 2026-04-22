@@ -150,8 +150,6 @@ $is_new_batch  = ($prefill_name !== '');
         .info-box a:hover { text-decoration: underline; }
 
         @media (max-width: 768px) {
-            .nav { padding: 6px 8px; gap: 4px 6px; }
-            .nav a { font-size: 12px; padding: 5px 10px; }
             .container { margin: 20px auto; }
             .form-card { padding: 25px; }
             .form-header h2 { font-size: 24px; }
@@ -196,8 +194,15 @@ $is_new_batch  = ($prefill_name !== '');
             if (empty($e)) $errors[] = "Expiration date is required.";
 
             if (empty($errors)) {
-                $sql = "INSERT INTO medicines (name, label, quantity, expiration_date)
-                        VALUES ('$n', '$l', '$q', '$e')";
+                // Get next batch number for this medicine
+                $bn_res = $conn->query("SELECT MAX(batch_number) AS max_bn FROM medicines WHERE name = '$n' AND label = '$l'");
+                $next_bn = 1;
+                if ($bn_res && $row = $bn_res->fetch_assoc()) {
+                    $next_bn = intval($row['max_bn']) + 1;
+                }
+
+                $sql = "INSERT INTO medicines (name, label, batch_number, quantity, expiration_date)
+                        VALUES ('$n', '$l', $next_bn, '$q', '$e')";
 
                 if ($conn->query($sql)) {
                     $new_id = $conn->insert_id;

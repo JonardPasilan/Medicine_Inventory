@@ -183,8 +183,6 @@ require_once __DIR__ . '/header.php';
         }
 
         @media (max-width: 768px) {
-            .nav { padding: 6px 8px; gap: 4px 6px; }
-            .nav a { font-size: 12px; padding: 5px 10px; }
             th, td { padding: 8px 10px; font-size: 12px; }
             .action-buttons { flex-direction: column; }
             .btn { text-align: center; }
@@ -336,7 +334,7 @@ require_once __DIR__ . '/header.php';
 
                         echo "<tr class='batch-detail-row' data-grp='{$gid}' style='display:none; {$b_bg}'>
                             <td style='padding-left:36px; color:#7f8c8d;'>
-                                📦 <strong>Batch #{$b['id']}</strong> &nbsp;·&nbsp; Added: {$b_added}
+                                📦 <strong>Batch #{$b['batch_number']}</strong> &nbsp;·&nbsp; Added: {$b_added}
                             </td>
                             <td>—</td>
                             <td><strong>{$b['quantity']}</strong> units</td>
