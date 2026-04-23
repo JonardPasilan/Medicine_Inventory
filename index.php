@@ -244,6 +244,35 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
 
         .no-data { text-align: center; padding: 40px; color: #7f8c8d; font-size: 15px; }
 
+        /* Custom Delete Modal */
+        #deleteModal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 10000;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(3px); opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #deleteModal.show { opacity: 1; }
+        .modal-content {
+            background: white; border-radius: 12px; padding: 30px;
+            width: 90%; max-width: 400px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #deleteModal.show .modal-content { transform: scale(1); }
+        .modal-icon { font-size: 50px; color: #e74c3c; margin-bottom: 15px; }
+        .modal-title { font-size: 22px; color: #2c3e50; margin-bottom: 10px; }
+        .modal-text { color: #7f8c8d; font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 15px; justify-content: center; }
+        .btn-modal {
+            padding: 10px 20px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-modal-cancel { background: #ecf0f1; color: #2c3e50; }
+        .btn-modal-cancel:hover { background: #bdc3c7; }
+        .btn-modal-confirm { background: #e74c3c; color: white; }
+        .btn-modal-confirm:hover { background: #c0392b; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(231,76,60,0.3); }
+
         @media (max-width: 768px) {
             th, td { padding: 10px; font-size: 12px; }
             .tab-btn { padding: 10px 15px; font-size: 13px; }
@@ -428,7 +457,7 @@ function renderInventoryTable($conn, $type, $search) {
                                     <div><strong>{$b['quantity']}</strong> <small style='color:#7f8c8d;'>$bunit</small></div>
                                     <div style='display:flex; gap:8px;'>
                                         <a href='edit.php?id=$bid' class='btn btn-edit'>✏️ Edit</a>
-                                        <button class='btn btn-delete' onclick='deleteBatch($bid)'>🗑️ Delete</button>
+                                        <button class='btn btn-delete' onclick='deleteBatch(event, $bid)'>🗑️ Delete</button>
                                     </div>
                                 </div>
                             </div>
@@ -441,6 +470,19 @@ function renderInventoryTable($conn, $type, $search) {
     }
 }
 ?>
+
+<!-- Custom Delete Confirmation Modal -->
+<div id="deleteModal">
+    <div class="modal-content">
+        <div class="modal-icon">⚠️</div>
+        <h3 class="modal-title">Delete Batch?</h3>
+        <p class="modal-text">Are you sure you want to permanently delete this batch? This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="btn-modal btn-modal-cancel" onclick="closeDeleteModal()">Cancel</button>
+            <button class="btn-modal btn-modal-confirm" id="confirmDeleteBtn">Yes, Delete</button>
+        </div>
+    </div>
+</div>
 
 <script>
     function switchTab(type) {
@@ -479,14 +521,53 @@ function renderInventoryTable($conn, $type, $search) {
         document.getElementById('loadingOverlay').style.display = 'flex';
     }
 
-    function deleteBatch(id) {
-        if (confirm("Are you sure you want to delete this batch?")) {
-            showLoading();
-            // In a real app, you'd use AJAX here or a form submit. 
-            // For now, redirecting to delete.php with id
-            window.location.href = `delete.php?id=${id}`;
+    let deleteTargetId = null;
+
+    function deleteBatch(event, id) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
         }
+        deleteTargetId = id;
+        const modal = document.getElementById('deleteModal');
+        modal.style.display = 'flex';
+        // Small delay to allow display:flex to apply before adding opacity class
+        setTimeout(() => modal.classList.add('show'), 10);
     }
+
+    function closeDeleteModal() {
+        const modal = document.getElementById('deleteModal');
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; deleteTargetId = null; }, 300);
+    }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (deleteTargetId) {
+            closeDeleteModal();
+            showLoading();
+            
+            // Create a hidden form to submit via POST
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'delete.php';
+            
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'id';
+            idInput.value = deleteTargetId;
+            
+            const deleteInput = document.createElement('input');
+            deleteInput.type = 'hidden';
+            deleteInput.name = 'delete';
+            deleteInput.value = '1';
+            
+            form.appendChild(idInput);
+            form.appendChild(deleteInput);
+            document.body.appendChild(form);
+            
+            form.submit();
+        }
+    });
 
     // Restore last active tab on load
     window.onload = function() {
