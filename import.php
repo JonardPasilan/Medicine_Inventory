@@ -196,7 +196,7 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
     <div class="form-card">
         <div class="form-header">
             <div class="icon">📥</div>
-            <h2>Bulk Stock Upload</h2>
+            <h2>Stock Upload</h2>
             <p>Upload a CSV file to add multiple items at once</p>
         </div>
 

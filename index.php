@@ -300,12 +300,17 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
                 <p>Low Stock Items (≤ 5)</p>
             </div>
         </div>
-        <div class="alert-card danger">
+        <div class="alert-card danger" style="position: relative; cursor: pointer;" onclick="window.location.href='expired.php'">
             <div class="alert-icon">⚠️</div>
             <div class="alert-details">
                 <h3><?php echo $expired_count; ?></h3>
-                <p>Expired Batches</p>
+                <p>Expired Batches (Archived)</p>
             </div>
+            <?php if ($expired_count > 0): ?>
+            <button onclick="event.stopPropagation(); clearExpiredBatches();" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); background:#c0392b; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; font-size:12px; transition:0.2s; z-index:10;">
+                🗑️ Clear All
+            </button>
+            <?php endif; ?>
         </div>
         <div class="alert-card info">
             <div class="alert-icon">📅</div>
@@ -568,6 +573,17 @@ function renderInventoryTable($conn, $type, $search) {
             form.submit();
         }
     });
+
+    function clearExpiredBatches() {
+        if (confirm("Are you sure you want to PERMANENTLY DELETE all expired batches from the database? This cannot be undone.")) {
+            showLoading();
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'delete_expired.php';
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
 
     // Restore last active tab on load
     window.onload = function() {
