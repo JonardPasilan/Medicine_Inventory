@@ -5,15 +5,18 @@ if(isset($_POST['update'])){
     $id = intval($_POST['id'] ?? 0);
     $n = $conn->real_escape_string((string)($_POST['name'] ?? ''));
     $l = $conn->real_escape_string((string)($_POST['label'] ?? ''));
+    $t = $conn->real_escape_string((string)($_POST['type'] ?? 'medicine'));
     $q = intval($_POST['quantity'] ?? 0);
     $e = $conn->real_escape_string((string)($_POST['exp'] ?? ''));
 
     if($id > 0){
+        $val_exp = !empty($e) ? "'$e'" : "NULL";
         $conn->query("UPDATE medicines SET 
             name='$n',
             label='$l',
+            type='$t',
             quantity='$q',
-            expiration_date='$e'
+            expiration_date=$val_exp
             WHERE id=$id
         ");
     }

@@ -5,6 +5,7 @@ require_once __DIR__ . '/header.php';
 // Pre-fill values when coming from "New Batch" button
 $prefill_name  = isset($_GET['name'])  ? htmlspecialchars($_GET['name'],  ENT_QUOTES, 'UTF-8') : '';
 $prefill_label = isset($_GET['label']) ? htmlspecialchars($_GET['label'], ENT_QUOTES, 'UTF-8') : '';
+$prefill_type  = isset($_GET['type'])  ? htmlspecialchars($_GET['type'],  ENT_QUOTES, 'UTF-8') : 'medicine';
 $is_new_batch  = ($prefill_name !== '');
 ?>
 
@@ -196,7 +197,7 @@ $is_new_batch  = ($prefill_name !== '');
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
-    <p style="color: #1f4f87; font-weight: 600;">Saving medicine...</p>
+    <p style="color: #1f4f87; font-weight: 600;">Saving item...</p>
 </div>
 
 <div id="toastContainer"></div>
@@ -204,11 +205,11 @@ $is_new_batch  = ($prefill_name !== '');
 <div class="container">
     <div class="form-card">
         <div class="form-header">
-            <div class="icon"><?php echo $is_new_batch ? '📦' : '💊'; ?></div>
-            <h2><?php echo $is_new_batch ? 'Add New Batch' : 'Add New Medicine'; ?></h2>
+            <div class="icon"><?php echo $prefill_type == 'medicine' ? '💊' : '🧴'; ?></div>
+            <h2><?php echo $is_new_batch ? 'Add New Batch' : 'Add New Item'; ?></h2>
             <p><?php echo $is_new_batch
-                ? 'Creating a new batch entry for this medicine'
-                : 'Enter the details of the medicine to add to inventory'; ?></p>
+                ? 'Creating a new batch entry for this ' . $prefill_type
+                : 'Enter the details of the ' . $prefill_type . ' to add to inventory'; ?></p>
         </div>
 
         <?php if ($is_new_batch): ?>
@@ -227,30 +228,36 @@ $is_new_batch  = ($prefill_name !== '');
         if (isset($_POST['add'])) {
             $n = mysqli_real_escape_string($conn, trim($_POST['name']       ?? ''));
             $l = mysqli_real_escape_string($conn, trim($_POST['Description'] ?? ''));
+            $t = mysqli_real_escape_string($conn, trim($_POST['type']        ?? 'medicine'));
             $q = intval($_POST['quantity'] ?? 0);
             $e = mysqli_real_escape_string($conn, trim($_POST['exp']        ?? ''));
 
             $errors = [];
-            if (empty($n)) $errors[] = "Medicine name is required.";
+            if (empty($n)) $errors[] = "Name is required.";
             if (empty($l)) $errors[] = "Description is required.";
             if ($q < 0)   $errors[] = "Quantity cannot be negative.";
-            if (empty($e)) $errors[] = "Expiration date is required.";
+            
+            // Only required for medicines
+            if ($t === 'medicine' && empty($e)) {
+                $errors[] = "Expiration date is required for medicines.";
+            }
 
             if (empty($errors)) {
-                $bn_res = $conn->query("SELECT MAX(batch_number) AS max_bn FROM medicines WHERE name = '$n' AND label = '$l'");
+                $bn_res = $conn->query("SELECT MAX(batch_number) AS max_bn FROM medicines WHERE name = '$n' AND label = '$l' AND type = '$t'");
                 $next_bn = 1;
                 if ($bn_res && $row = $bn_res->fetch_assoc()) {
                     $next_bn = intval($row['max_bn']) + 1;
                 }
 
-                $sql = "INSERT INTO medicines (name, label, batch_number, quantity, expiration_date)
-                        VALUES ('$n', '$l', $next_bn, '$q', '$e')";
+                $val_exp = !empty($e) ? "'$e'" : "NULL";
+                $sql = "INSERT INTO medicines (name, label, type, batch_number, quantity, expiration_date)
+                        VALUES ('$n', '$l', '$t', $next_bn, '$q', $val_exp)";
 
                 if ($conn->query($sql)) {
                     $new_id = $conn->insert_id;
                     $conn->query("INSERT INTO logs (medicine_id, quantity, action)
                                   VALUES ($new_id, $q, 'New Batch Added')");
-                    $status_msg = ($is_new_batch ? "New batch added for $n" : "Medicine $n added") . "! Qty: $q units.";
+                    $status_msg = ($is_new_batch ? "New batch added for $n" : "$n added") . "! Qty: $q units.";
                     $status_type = 'success';
                 } else {
                     $status_msg = "Error: " . $conn->error;
@@ -265,17 +272,28 @@ $is_new_batch  = ($prefill_name !== '');
 
         <form method="POST" id="addForm" onsubmit="handleSubmit(event)">
             <div class="form-group">
-                <label>Medicine Name <span class="required">*</span></label>
+                <label>Item Type <span class="required">*</span></label>
+                <select name="type" id="typeSelect" required <?php echo $is_new_batch ? 'disabled' : ''; ?> onchange="updateRequiredFields()">
+                    <option value="medicine" <?php echo $prefill_type == 'medicine' ? 'selected' : ''; ?>>💊 Medicine</option>
+                    <option value="consumable" <?php echo $prefill_type == 'consumable' ? 'selected' : ''; ?>>🧴 Consumable</option>
+                </select>
+                <?php if($is_new_batch): ?>
+                    <input type="hidden" name="type" value="<?php echo $prefill_type; ?>">
+                <?php endif; ?>
+            </div>
+
+            <div class="form-group">
+                <label>Item Name <span class="required">*</span></label>
                 <input type="text" name="name"
                        value="<?php echo $prefill_name; ?>"
-                       placeholder="e.g., Paracetamol, Amoxicillin" required>
+                       placeholder="e.g., Paracetamol, Gauze, Alcohol" required>
             </div>
 
             <div class="form-group">
                 <label>Description <span class="required">*</span></label>
                 <input type="text" name="Description"
                        value="<?php echo $prefill_label; ?>"
-                       placeholder="e.g., 500mg tablet, syrup" required>
+                       placeholder="e.g., 500mg tablet, 100pcs/box" required>
             </div>
 
             <div class="form-group">
@@ -285,21 +303,20 @@ $is_new_batch  = ($prefill_name !== '');
             </div>
 
             <div class="form-group">
-                <label>Expiration Date <span class="required">*</span></label>
-                <input type="date" name="exp" id="expDate" required>
+                <label>Expiration Date <span class="required" id="expReq">*</span></label>
+                <input type="date" name="exp" id="expDate">
                 <small style="color:#7f8c8d; display:block; margin-top:5px;">
-                    <?php echo $is_new_batch ? 'Set the expiration date for this new batch.' : 'Make sure to enter the correct expiration date.'; ?>
+                    Set the expiration date for this batch.
                 </small>
             </div>
 
             <button type="submit" name="add" class="btn-submit">
-                <?php echo $is_new_batch ? '📦 Add New Batch to Inventory' : '➕ Add Medicine to Inventory'; ?>
+                <?php echo $is_new_batch ? '📦 Add New Batch to Inventory' : '➕ Add to Inventory'; ?>
             </button>
         </form>
 
         <div class="info-box">
-            <p>💡 <strong>Tip:</strong> Each batch can have a different quantity and expiration date. Dispensing follows <strong>FIFO</strong> (oldest expiry first).</p>
-            <p style="margin-top: 10px;">📊 <a href="index.php">← Back to Inventory</a></p>
+            <p>📊 <a href="index.php">← Back to Inventory</a></p>
         </div>
     </div>
 </div>
@@ -348,10 +365,27 @@ $is_new_batch  = ($prefill_name !== '');
         window.onload = function() {
             showToast("<?php echo addslashes($status_msg); ?>", "<?php echo $status_type; ?>");
             <?php if ($status_type === 'success'): ?>
-                setTimeout(() => { document.getElementById('addForm').reset(); }, 500);
+                setTimeout(() => { document.getElementById('addForm').reset(); updateRequiredFields(); }, 500);
             <?php endif; ?>
         };
     <?php endif; ?>
+
+    function updateRequiredFields() {
+        const type = document.getElementById('typeSelect').value;
+        const expInput = document.getElementById('expDate');
+        const expStar = document.getElementById('expReq');
+        
+        if (type === 'medicine') {
+            expInput.required = true;
+            expStar.style.display = 'inline';
+        } else {
+            expInput.required = false;
+            expStar.style.display = 'none';
+        }
+    }
+
+    // Initial check
+    document.addEventListener('DOMContentLoaded', updateRequiredFields);
 </script>
 
 </body>

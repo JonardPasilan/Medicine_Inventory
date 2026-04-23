@@ -18,12 +18,7 @@ if (!$r || $r->num_rows === 0) {
 
 $row = $r->fetch_assoc();
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Batch - Clinic Management System</title>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -32,24 +27,6 @@ $row = $r->fetch_assoc();
             background: #f4f6f9;
             min-height: 100vh;
         }
-
-        .nav {
-            background: #2c3e50;
-            padding: 8px 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: sticky; top: 0; z-index: 999;
-            display: flex; flex-wrap: wrap;
-            justify-content: center; align-items: center;
-            gap: 6px 10px;
-        }
-        .nav a {
-            color: white; text-decoration: none;
-            font-size: 13px; font-weight: 600;
-            padding: 6px 12px; border-radius: 6px;
-            transition: background 0.2s ease, transform 0.2s ease;
-            display: inline-block; white-space: nowrap;
-        }
-        .nav a:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
 
         .container { max-width: 600px; margin: 40px auto; padding: 0 20px; }
 
@@ -70,7 +47,6 @@ $row = $r->fetch_assoc();
         .form-header h2 { color: #2c3e50; font-size: 28px; margin-bottom: 8px; }
         .form-header p  { color: #7f8c8d; font-size: 14px; }
 
-        /* Batch ID badge */
         .batch-id-badge {
             display: inline-block;
             background: #1f4f87;
@@ -82,7 +58,6 @@ $row = $r->fetch_assoc();
             margin-top: 6px;
         }
 
-        /* Current info box */
         .medicine-preview {
             background: #eef2f7;
             border-radius: 10px;
@@ -100,24 +75,6 @@ $row = $r->fetch_assoc();
         .preview-item:last-child { border-bottom: none; }
         .preview-label { font-weight: 600; color: #2c3e50; }
         .preview-value { color: #7f8c8d; }
-
-        /* Warnings */
-        .stock-warning {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 12px; border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex; align-items: center; gap: 10px;
-            font-size: 14px;
-        }
-        .expiry-warning {
-            background: #ffeaea;
-            border-left: 4px solid #e74c3c;
-            padding: 12px; border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex; align-items: center; gap: 10px;
-            font-size: 14px;
-        }
 
         .form-group { margin-bottom: 20px; }
 
@@ -163,24 +120,7 @@ $row = $r->fetch_assoc();
         }
         .btn-cancel:hover { background: #7f8c8d; transform: translateY(-2px); }
 
-        .alert {
-            padding: 15px 20px; border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex; align-items: center; gap: 10px;
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to   { transform: translateX(0); opacity: 1; }
-        }
-        .alert-info {
-            background: linear-gradient(135deg, #d1ecf1, #bee5eb);
-            color: #0c5460; border-left: 4px solid #17a2b8;
-        }
-
         @media (max-width: 768px) {
-            .nav { padding: 6px 8px; gap: 4px 6px; }
-            .nav a { font-size: 12px; padding: 5px 10px; }
             .container { margin: 20px auto; }
             .form-card { padding: 25px; }
             .button-group { flex-direction: column; }
@@ -189,13 +129,6 @@ $row = $r->fetch_assoc();
     </style>
 </head>
 <body>
-
-<div class="nav">
-    <a href="index.php">🏠 Dashboard</a>
-    <a href="add.php">➕ Add Medicine</a>
-    <a href="dispense.php">💊 Dispense</a>
-    <a href="logs.php">📋 Logs</a>
-</div>
 
 <div class="container">
     <div class="form-card">
@@ -206,62 +139,14 @@ $row = $r->fetch_assoc();
             <span class="batch-id-badge">Batch ID #<?php echo (int)$row['id']; ?></span>
         </div>
 
-        <?php
-        if (isset($_GET['updated']) && $_GET['updated'] === 'success') {
-            echo "<div class='alert alert-info' id='alertMessage'>
-                    <span>✅</span>
-                    <span>Batch updated successfully!</span>
-                    <span style='margin-left:auto; cursor:pointer; font-size:20px;'
-                          onclick='this.parentElement.style.display=\"none\"'>&times;</span>
-                  </div>";
-        }
-
-        $today_s    = date("Y-m-d");
-        $exp_date   = $row['expiration_date'];
-        $quantity   = (int)$row['quantity'];
-
-        if ($quantity <= 5) {
-            echo "<div class='stock-warning'>
-                    <span>⚠️</span>
-                    <span><strong>Low Stock:</strong> This batch only has {$quantity} unit(s) remaining.</span>
-                  </div>";
-        }
-        if ($exp_date && strtotime($exp_date) < strtotime($today_s)) {
-            echo "<div class='expiry-warning'>
-                    <span>⚠️</span>
-                    <span><strong>Expired Batch!</strong> This batch expired on " . date('M d, Y', strtotime($exp_date)) . ". Consider deleting it.</span>
-                  </div>";
-        } elseif ($exp_date && strtotime($exp_date) < strtotime('+30 days')) {
-            $days = ceil((strtotime($exp_date) - strtotime($today_s)) / 86400);
-            echo "<div class='stock-warning'>
-                    <span>📅</span>
-                    <span><strong>Expiring Soon!</strong> This batch expires in {$days} day(s) on " . date('M d, Y', strtotime($exp_date)) . ".</span>
-                  </div>";
-        }
-        ?>
-
         <div class="medicine-preview">
             <div class="preview-item">
-                <span class="preview-label">Batch ID:</span>
-                <span class="preview-value">#<?php echo (int)$row['id']; ?></span>
-            </div>
-            <div class="preview-item">
-                <span class="preview-label">Date Added:</span>
-                <span class="preview-value"><?php echo date('M d, Y', strtotime($row['created_at'])); ?></span>
+                <span class="preview-label">Type:</span>
+                <span class="preview-value" style="text-transform: capitalize;"><?php echo htmlspecialchars($row['type']); ?></span>
             </div>
             <div class="preview-item">
                 <span class="preview-label">Current Stock:</span>
-                <span class="preview-value"
-                      style="color:<?php echo $quantity <= 5 ? '#e67e22' : '#2c3e50'; ?>; font-weight:bold;">
-                    <?php echo $quantity; ?> units
-                </span>
-            </div>
-            <div class="preview-item">
-                <span class="preview-label">Current Expiry:</span>
-                <span class="preview-value"
-                      style="color:<?php echo ($exp_date && strtotime($exp_date) < strtotime($today_s)) ? '#e74c3c' : '#2c3e50'; ?>;">
-                    <?php echo $exp_date ? date('M d, Y', strtotime($exp_date)) : 'N/A'; ?>
-                </span>
+                <span class="preview-value"><?php echo (int)$row['quantity']; ?> units</span>
             </div>
         </div>
 
@@ -269,39 +154,35 @@ $row = $r->fetch_assoc();
             <input type="hidden" name="id" value="<?php echo (int)$row['id']; ?>">
 
             <div class="form-group">
-                <label>Medicine Name <span class="required">*</span></label>
-                <input type="text" name="name"
-                       value="<?php echo htmlspecialchars($row['name']); ?>" required>
+                <label>Item Type <span class="required">*</span></label>
+                <select name="type" required>
+                    <option value="medicine" <?php echo $row['type'] == 'medicine' ? 'selected' : ''; ?>>💊 Medicine</option>
+                    <option value="consumable" <?php echo $row['type'] == 'consumable' ? 'selected' : ''; ?>>🧴 Consumable</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Item Name <span class="required">*</span></label>
+                <input type="text" name="name" value="<?php echo htmlspecialchars($row['name']); ?>" required>
             </div>
 
             <div class="form-group">
                 <label>Description <span class="required">*</span></label>
-                <input type="text" name="label"
-                       value="<?php echo htmlspecialchars((string)$row['label']); ?>" required>
+                <input type="text" name="label" value="<?php echo htmlspecialchars((string)$row['label']); ?>" required>
             </div>
 
             <div class="form-group">
                 <label>Quantity <span class="required">*</span></label>
-                <input type="number" name="quantity" id="quantity"
-                       value="<?php echo $quantity; ?>" min="0" required>
-                <small style="color:#7f8c8d; margin-top:5px; display:block;">
-                    Adjust the quantity for this specific batch only.
-                </small>
+                <input type="number" name="quantity" value="<?php echo (int)$row['quantity']; ?>" min="0" required>
             </div>
 
             <div class="form-group">
                 <label>Expiration Date <span class="required">*</span></label>
-                <input type="date" name="exp"
-                       value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>" required>
-                <small style="color:#7f8c8d; margin-top:5px; display:block;">
-                    This updates the expiration date for this batch only.
-                </small>
+                <input type="date" name="exp" value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>" required>
             </div>
 
             <div class="button-group">
-                <button type="submit" name="update" class="btn-update">
-                    💾 Update Batch
-                </button>
+                <button type="submit" name="update" class="btn-update">💾 Update Batch</button>
                 <a href="index.php" class="btn-cancel">❌ Cancel</a>
             </div>
         </form>
@@ -309,26 +190,13 @@ $row = $r->fetch_assoc();
 </div>
 
 <script>
-    setTimeout(function() {
-        const a = document.getElementById('alertMessage');
-        if (a) a.style.display = 'none';
-    }, 5000);
-
-    const qtyInput = document.getElementById('quantity');
-    if (qtyInput) {
-        qtyInput.addEventListener('change', function() {
-            if (this.value < 0) this.value = 0;
-        });
-    }
-
     let formChanged = false;
-    const form   = document.getElementById('editForm');
-    const inputs = form.querySelectorAll('input');
-    inputs.forEach(inp => inp.addEventListener('change', () => { formChanged = true; }));
+    const form = document.getElementById('editForm');
+    form.querySelectorAll('input, select').forEach(inp => inp.addEventListener('change', () => { formChanged = true; }));
     window.addEventListener('beforeunload', function(e) {
         if (formChanged) {
             e.preventDefault();
-            e.returnValue = 'You have unsaved changes. Leave anyway?';
+            e.returnValue = 'You have unsaved changes.';
         }
     });
     form.addEventListener('submit', () => { formChanged = false; });

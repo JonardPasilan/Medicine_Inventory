@@ -75,7 +75,7 @@
     $current_page = basename($_SERVER['PHP_SELF']); 
     ?>
     <a href="index.php" class="<?php echo $current_page == 'index.php' ? 'active' : ''; ?>">🏠 Dashboard</a>
-    <a href="add.php" class="<?php echo $current_page == 'add.php' ? 'active' : ''; ?>">➕ Add Medicine</a>
+    <a href="add.php" class="<?php echo $current_page == 'add.php' ? 'active' : ''; ?>">➕ Add</a>
     <a href="dispense.php" class="<?php echo $current_page == 'dispense.php' ? 'active' : ''; ?>">💊 Dispense</a>
     <a href="logs.php" class="<?php echo $current_page == 'logs.php' ? 'active' : ''; ?>">📋 Logs</a>
 </div>

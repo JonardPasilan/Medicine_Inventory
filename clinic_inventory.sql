@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 08, 2026 at 07:10 AM
+-- Generation Time: Apr 23, 2026 at 07:50 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -40,7 +40,7 @@ CREATE TABLE `logs` (
 --
 
 INSERT INTO `logs` (`id`, `medicine_id`, `quantity`, `action`, `date`) VALUES
-(2, 4, 1, 'Released   to patient', '2026-03-24 00:54:52'),
+(2, 4, 1, 'Released to patient', '2026-03-24 00:54:52'),
 (3, 3, 2, 'Released to patient', '2026-03-24 06:18:35'),
 (4, 3, 1, 'Released to patient', '2026-03-24 07:26:54'),
 (5, 3, 20, 'Released to patient', '2026-03-24 07:27:26'),
@@ -57,6 +57,8 @@ CREATE TABLE `medicines` (
   `id` int(11) NOT NULL,
   `name` varchar(100) DEFAULT NULL,
   `label` varchar(50) DEFAULT NULL,
+  `batch_number` int(11) DEFAULT 1,
+  `type` varchar(20) DEFAULT 'medicine',
   `quantity` int(11) DEFAULT NULL,
   `expiration_date` date DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -66,10 +68,10 @@ CREATE TABLE `medicines` (
 -- Dumping data for table `medicines`
 --
 
-INSERT INTO `medicines` (`id`, `name`, `label`, `quantity`, `expiration_date`, `created_at`) VALUES
-(1, 'Paracetamol', '500g', 10, '2026-03-19', '2026-03-19 05:49:03'),
-(3, 'Bioflu', 'medicine', 25, '2027-01-11', '2026-03-24 00:46:33'),
-(4, 'Ibuprofen', 'medicine', 2, '2026-03-22', '2026-03-24 00:49:46');
+INSERT INTO `medicines` (`id`, `name`, `label`, `batch_number`, `type`, `quantity`, `expiration_date`, `created_at`) VALUES
+(1, 'Paracetamol', '500g', 1, 'medicine', 10, '2026-03-19', '2026-03-19 05:49:03'),
+(3, 'Bioflu', 'medicine', 1, 'medicine', 25, '2027-01-11', '2026-03-24 00:46:33'),
+(4, 'Ibuprofen', 'medicine', 1, 'medicine', 2, '2026-03-22', '2026-03-24 00:49:46');
 
 --
 -- Indexes for dumped tables
