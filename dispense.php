@@ -12,6 +12,8 @@ $alert_type  = '';
 if (isset($_POST['use'])) {
     $med_name   = mysqli_real_escape_string($conn, trim($_POST['med_name'] ?? ''));
     $qty_needed = intval($_POST['qty'] ?? 0);
+    $patient    = mysqli_real_escape_string($conn, trim($_POST['patient_name'] ?? ''));
+    $prescriber = mysqli_real_escape_string($conn, trim($_POST['prescriber_name'] ?? ''));
 
     if (empty($med_name)) {
         $alert      = "Please select a medicine.";
@@ -48,8 +50,12 @@ if (isset($_POST['use'])) {
                 $new_qty = (int)$b['quantity'] - $take;
 
                 $conn->query("UPDATE medicines SET quantity = $new_qty WHERE id = {$b['id']}");
-                $conn->query("INSERT INTO logs (medicine_id, quantity, action)
-                              VALUES ({$b['id']}, $take, 'Released to patient')");
+                
+                $p_val = !empty($patient) ? "'$patient'" : "NULL";
+                $d_val = !empty($prescriber) ? "'$prescriber'" : "NULL";
+                
+                $conn->query("INSERT INTO logs (medicine_id, quantity, action, patient_name, prescriber_name)
+                              VALUES ({$b['id']}, $take, 'Released to patient', $p_val, $d_val)");
 
                 $exp_fmt = date('M d, Y', strtotime($b['expiration_date']));
                 $details[] = "Batch #{$b['batch_number']} (Exp: {$exp_fmt}) — {$take} unit(s)";
@@ -320,6 +326,17 @@ $meds_query = $conn->query("
             </div>
 
             <div id="warnArea"></div>
+
+            <div class="form-group" style="display:flex; gap:15px;">
+                <div style="flex:1;">
+                    <label>Patient Name <small style="color:#7f8c8d;">(Optional)</small></label>
+                    <input type="text" name="patient_name" placeholder="Enter patient name">
+                </div>
+                <div style="flex:1;">
+                    <label>Prescriber Name <small style="color:#7f8c8d;">(Optional)</small></label>
+                    <input type="text" name="prescriber_name" placeholder="Dr. Name">
+                </div>
+            </div>
 
             <div class="form-group">
                 <label>Quantity to Dispense <span class="required">*</span></label>

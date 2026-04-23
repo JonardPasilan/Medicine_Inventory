@@ -4,6 +4,19 @@ require_once __DIR__ . '/db.php';
 
 // Handle search query
 $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
+
+// Fetch Alerts Data
+$today_date = date('Y-m-d');
+$soon_date  = date('Y-m-d', strtotime('+30 days'));
+
+$low_stock_q = $conn->query("SELECT COUNT(*) as c FROM (SELECT name, label, SUM(quantity) as tq FROM medicines WHERE is_archived = 0 GROUP BY name, label HAVING tq <= 5) as sub");
+$low_stock_count = $low_stock_q ? $low_stock_q->fetch_assoc()['c'] : 0;
+
+$expired_q = $conn->query("SELECT COUNT(*) as c FROM medicines WHERE is_archived = 1 AND expiration_date < '$today_date'");
+$expired_count = $expired_q ? $expired_q->fetch_assoc()['c'] : 0;
+
+$expiring_soon_q = $conn->query("SELECT COUNT(*) as c FROM medicines WHERE is_archived = 0 AND expiration_date >= '$today_date' AND expiration_date <= '$soon_date'");
+$expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] : 0;
 ?>
 
     <style>
@@ -31,6 +44,32 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['searc
         }
         .header-card h2 { color: #2c3e50; font-size: 28px; margin-bottom: 8px; }
         .header-card p  { color: #7f8c8d; font-size: 14px; }
+
+        /* Dashboard Alerts */
+        .alerts-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .alert-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 5px solid #ccc;
+            transition: transform 0.2s ease;
+        }
+        .alert-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
+        .alert-card.warning { border-left-color: #f39c12; }
+        .alert-card.danger { border-left-color: #e74c3c; }
+        .alert-card.info { border-left-color: #3498db; }
+        .alert-icon { font-size: 30px; }
+        .alert-details h3 { font-size: 24px; color: #2c3e50; margin-bottom: 2px; }
+        .alert-details p { font-size: 13px; color: #7f8c8d; margin: 0; }
 
         /* Search Section */
         .search-section {
@@ -223,6 +262,31 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['searc
         <p>Manage medicines and consumables in one place</p>
     </div>
 
+    <!-- Alerts Dashboard -->
+    <div class="alerts-dashboard">
+        <div class="alert-card warning">
+            <div class="alert-icon">📉</div>
+            <div class="alert-details">
+                <h3><?php echo $low_stock_count; ?></h3>
+                <p>Low Stock Items (≤ 5)</p>
+            </div>
+        </div>
+        <div class="alert-card danger">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-details">
+                <h3><?php echo $expired_count; ?></h3>
+                <p>Expired Batches</p>
+            </div>
+        </div>
+        <div class="alert-card info">
+            <div class="alert-icon">📅</div>
+            <div class="alert-details">
+                <h3><?php echo $expiring_soon_count; ?></h3>
+                <p>Expiring Soon (30 Days)</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Search Section -->
     <div class="search-section">
         <form method="GET" class="search-form" onsubmit="showLoading()">
@@ -246,6 +310,7 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['searc
             <thead>
                 <tr>
                     <th>Medicine Name</th>
+                    <th>Category</th>
                     <th>Description</th>
                     <th>Total Qty</th>
                     <th>Earliest Expiry</th>
@@ -265,6 +330,7 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['searc
             <thead>
                 <tr>
                     <th>Item Name</th>
+                    <th>Category</th>
                     <th>Description</th>
                     <th>Total Qty</th>
                     <th>Earliest Expiry</th>
@@ -287,13 +353,13 @@ function renderInventoryTable($conn, $type, $search) {
     $today = date("Y-m-d");
     $soon  = date("Y-m-d", strtotime('+30 days'));
 
-    $where = "WHERE type = '$type'";
+    $where = "WHERE type = '$type' AND is_archived = 0";
     if ($search) {
         $where .= " AND (name LIKE '%$search%' OR label LIKE '%$search%')";
     }
 
     $groups = $conn->query("
-        SELECT name, label, 
+        SELECT name, label, MAX(category) as category, MAX(unit) as unit,
                SUM(quantity) AS total_qty, 
                MIN(expiration_date) AS earliest_exp,
                COUNT(*) AS batch_count
@@ -313,6 +379,9 @@ function renderInventoryTable($conn, $type, $search) {
             $earliest = $g['earliest_exp'];
             $batch_cnt = (int)$g['batch_count'];
 
+            $gcat = htmlspecialchars($g['category'] ?? 'General');
+            $gunit = htmlspecialchars($g['unit'] ?? 'pcs');
+
             $is_exp = $earliest && strtotime($earliest) < strtotime($today);
             $is_soon = !$is_exp && $earliest && strtotime($earliest) < strtotime($soon);
             $is_low = $total_qty <= 5;
@@ -330,31 +399,33 @@ function renderInventoryTable($conn, $type, $search) {
                         <strong>$gname</strong> <span class='toggle-icon' id='icon_$gid'>▼</span><br>
                         <small style='color:#7f8c8d; font-size:11px;'>$batch_cnt batch(es)</small>
                     </td>
+                    <td><span style='background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600;'>$gcat</span></td>
                     <td>$glabel</td>
-                    <td><strong>$total_qty</strong></td>
+                    <td><strong>$total_qty</strong> <small style='color:#7f8c8d;'>$gunit</small></td>
                     <td>" . ($earliest ? date('M d, Y', strtotime($earliest)) : 'N/A') . "</td>
                     <td>$status</td>
                     <td onclick='event.stopPropagation()'>
-                        <a href='add.php?name=".urlencode($g['name'])."&label=".urlencode((string)$g['label'])."&type=$type' class='btn btn-stock'>📦 New Batch</a>
+                        <a href='add.php?name=".urlencode($g['name'])."&label=".urlencode((string)$g['label'])."&type=$type&cat=".urlencode($gcat)."&unit=".urlencode($gunit)."' class='btn btn-stock'>📦 New Batch</a>
                     </td>
                   </tr>";
 
             // Sub-rows for batches
             $sname = mysqli_real_escape_string($conn, $g['name']);
             $slabel = mysqli_real_escape_string($conn, (string)$g['label']);
-            $batches = $conn->query("SELECT * FROM medicines WHERE name='$sname' AND label='$slabel' AND type='$type' ORDER BY expiration_date ASC");
+            $batches = $conn->query("SELECT * FROM medicines WHERE name='$sname' AND label='$slabel' AND type='$type' AND is_archived = 0 ORDER BY expiration_date ASC");
 
             while ($b = $batches->fetch_assoc()) {
                 $bid = $b['id'];
                 $b_exp = $b['expiration_date'] && strtotime($b['expiration_date']) < strtotime($today);
                 $b_bg = $b_exp ? "background:#fffafa;" : "background:#f9f9f9;";
                 
+                $bunit = htmlspecialchars($b['unit'] ?? 'pcs');
                 echo "<tr class='batch-detail-row' data-grp='$gid' id='row_$bid' style='display:none; $b_bg'>
-                        <td colspan='6' style='padding:0;'>
+                        <td colspan='7' style='padding:0;'>
                             <div class='batch-anim-wrapper'>
                                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                                     <div>📦 Batch #{$b['batch_number']} <small style='color:#7f8c8d; margin-left:10px;'>Exp: " . ($b['expiration_date'] ? date('M d, Y', strtotime($b['expiration_date'])) : 'N/A') . "</small></div>
-                                    <div><strong>{$b['quantity']}</strong> units</div>
+                                    <div><strong>{$b['quantity']}</strong> <small style='color:#7f8c8d;'>$bunit</small></div>
                                     <div style='display:flex; gap:8px;'>
                                         <a href='edit.php?id=$bid' class='btn btn-edit'>✏️ Edit</a>
                                         <button class='btn btn-delete' onclick='deleteBatch($bid)'>🗑️ Delete</button>

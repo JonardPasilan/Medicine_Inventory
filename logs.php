@@ -250,6 +250,7 @@ require_once __DIR__ . '/header.php';
                     <th>Batch Expiry</th>
                     <th>Qty</th>
                     <th>Action</th>
+                    <th>Details</th>
                     <th>Date &amp; Time</th>
                 </tr>
             </thead>
@@ -261,6 +262,8 @@ require_once __DIR__ . '/header.php';
                     l.id,
                     l.quantity,
                     l.action,
+                    l.patient_name,
+                    l.prescriber_name,
                     DATE_FORMAT(l.date, '%M %d, %Y %h:%i %p') AS fmt_date,
                     l.medicine_id,
                     m.name,
@@ -335,6 +338,19 @@ require_once __DIR__ . '/header.php';
 
                     $qty_class = $qty <= 5 ? 'qty-low' : 'qty-normal';
                     $fmt_date  = htmlspecialchars((string)$row['fmt_date'], ENT_QUOTES, 'UTF-8');
+                    
+                    // Patient/Prescriber Details
+                    $details_html = "<span style='color:#95a5a6;'>—</span>";
+                    if ($row['action'] === 'Released to patient') {
+                        $p_name = !empty($row['patient_name']) ? htmlspecialchars($row['patient_name']) : 'N/A';
+                        $d_name = !empty($row['prescriber_name']) ? htmlspecialchars($row['prescriber_name']) : 'N/A';
+                        if ($p_name !== 'N/A' || $d_name !== 'N/A') {
+                            $details_html = "<div style='font-size:12px; line-height:1.4;'>
+                                <div><strong>Patient:</strong> {$p_name}</div>
+                                <div><strong>Dr.:</strong> {$d_name}</div>
+                            </div>";
+                        }
+                    }
 
                     echo "<tr>
                         <td style='color:#aaa; font-size:12px;'>{$row_num}</td>
@@ -342,11 +358,12 @@ require_once __DIR__ . '/header.php';
                         <td>{$bexp_disp}</td>
                         <td><span class='qty-badge {$qty_class}'>{$qty} unit(s)</span></td>
                         <td><span class='badge {$badge_class}'>{$badge_icon} {$act}</span></td>
+                        <td>{$details_html}</td>
                         <td class='date-cell'>📅 {$fmt_date}</td>
                     </tr>";
                 }
             } else {
-                echo "<tr><td colspan='6' class='no-data'>
+                echo "<tr><td colspan='7' class='no-data'>
                          <div class='icon'>📭</div>
                          <div>No log records found</div>
                          <small style='margin-top:10px; display:block;'>Try adjusting your filters</small>

@@ -6,6 +6,8 @@ require_once __DIR__ . '/header.php';
 $prefill_name  = isset($_GET['name'])  ? htmlspecialchars($_GET['name'],  ENT_QUOTES, 'UTF-8') : '';
 $prefill_label = isset($_GET['label']) ? htmlspecialchars($_GET['label'], ENT_QUOTES, 'UTF-8') : '';
 $prefill_type  = isset($_GET['type'])  ? htmlspecialchars($_GET['type'],  ENT_QUOTES, 'UTF-8') : 'medicine';
+$prefill_cat   = isset($_GET['cat'])   ? htmlspecialchars($_GET['cat'],   ENT_QUOTES, 'UTF-8') : 'General';
+$prefill_unit  = isset($_GET['unit'])  ? htmlspecialchars($_GET['unit'],  ENT_QUOTES, 'UTF-8') : 'pcs';
 $is_new_batch  = ($prefill_name !== '');
 ?>
 
@@ -229,6 +231,8 @@ $is_new_batch  = ($prefill_name !== '');
             $n = mysqli_real_escape_string($conn, trim($_POST['name']       ?? ''));
             $l = mysqli_real_escape_string($conn, trim($_POST['Description'] ?? ''));
             $t = mysqli_real_escape_string($conn, trim($_POST['type']        ?? 'medicine'));
+            $c = mysqli_real_escape_string($conn, trim($_POST['category']    ?? 'General'));
+            $u = mysqli_real_escape_string($conn, trim($_POST['unit']        ?? 'pcs'));
             $q = intval($_POST['quantity'] ?? 0);
             $e = mysqli_real_escape_string($conn, trim($_POST['exp']        ?? ''));
 
@@ -250,8 +254,8 @@ $is_new_batch  = ($prefill_name !== '');
                 }
 
                 $val_exp = !empty($e) ? "'$e'" : "NULL";
-                $sql = "INSERT INTO medicines (name, label, type, batch_number, quantity, expiration_date)
-                        VALUES ('$n', '$l', '$t', $next_bn, '$q', $val_exp)";
+                $sql = "INSERT INTO medicines (name, label, type, category, unit, batch_number, quantity, expiration_date)
+                        VALUES ('$n', '$l', '$t', '$c', '$u', $next_bn, '$q', $val_exp)";
 
                 if ($conn->query($sql)) {
                     $new_id = $conn->insert_id;
@@ -296,6 +300,40 @@ $is_new_batch  = ($prefill_name !== '');
                        placeholder="e.g., 500mg tablet, 100pcs/box" required>
             </div>
 
+            <div class="form-group" style="display:flex; gap:15px;">
+                <div style="flex:1;">
+                    <label>Category <span class="required">*</span></label>
+                    <input type="text" name="category" list="categoryList"
+                           value="<?php echo $prefill_cat; ?>"
+                           placeholder="e.g., Tablet, Syrup, Injectable" required <?php echo $is_new_batch ? 'readonly' : ''; ?>>
+                    <datalist id="categoryList">
+                        <option value="Tablet">
+                        <option value="Syrup">
+                        <option value="Capsule">
+                        <option value="Injectable">
+                        <option value="Topical">
+                        <option value="Drops">
+                        <option value="General">
+                        <option value="Consumable">
+                    </datalist>
+                </div>
+                <div style="flex:1;">
+                    <label>Unit <span class="required">*</span></label>
+                    <input type="text" name="unit" list="unitList"
+                           value="<?php echo $prefill_unit; ?>"
+                           placeholder="e.g., pcs, box, ml" required <?php echo $is_new_batch ? 'readonly' : ''; ?>>
+                    <datalist id="unitList">
+                        <option value="pcs">
+                        <option value="box">
+                        <option value="ml">
+                        <option value="mg">
+                        <option value="vial">
+                        <option value="bottle">
+                        <option value="pack">
+                    </datalist>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>Quantity <span class="required">*</span></label>
                 <input type="number" name="quantity" min="0"
@@ -303,10 +341,10 @@ $is_new_batch  = ($prefill_name !== '');
             </div>
 
             <div class="form-group">
-                <label>Expiration Date <span class="required" id="expReq">*</span></label>
-                <input type="date" name="exp" id="expDate">
+                <label>Expiration Date <span class="required" id="expReq" style="<?php echo $prefill_type == 'consumable' ? 'display:none;' : ''; ?>">*</span></label>
+                <input type="date" name="exp" id="expDate" <?php echo $prefill_type == 'medicine' ? 'required' : ''; ?>>
                 <small style="color:#7f8c8d; display:block; margin-top:5px;">
-                    Set the expiration date for this batch.
+                    Set the expiration date for this batch. (Optional for consumables)
                 </small>
             </div>
 

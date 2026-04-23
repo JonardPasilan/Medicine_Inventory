@@ -155,7 +155,7 @@ $row = $r->fetch_assoc();
 
             <div class="form-group">
                 <label>Item Type <span class="required">*</span></label>
-                <select name="type" required>
+                <select name="type" id="typeSelect" required onchange="updateRequiredFields()">
                     <option value="medicine" <?php echo $row['type'] == 'medicine' ? 'selected' : ''; ?>>💊 Medicine</option>
                     <option value="consumable" <?php echo $row['type'] == 'consumable' ? 'selected' : ''; ?>>🧴 Consumable</option>
                 </select>
@@ -164,6 +164,38 @@ $row = $r->fetch_assoc();
             <div class="form-group">
                 <label>Item Name <span class="required">*</span></label>
                 <input type="text" name="name" value="<?php echo htmlspecialchars($row['name']); ?>" required>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:15px;">
+                <div style="flex:1;">
+                    <label>Category <span class="required">*</span></label>
+                    <input type="text" name="category" list="categoryList"
+                           value="<?php echo htmlspecialchars($row['category'] ?? 'General'); ?>" required>
+                    <datalist id="categoryList">
+                        <option value="Tablet">
+                        <option value="Syrup">
+                        <option value="Capsule">
+                        <option value="Injectable">
+                        <option value="Topical">
+                        <option value="Drops">
+                        <option value="General">
+                        <option value="Consumable">
+                    </datalist>
+                </div>
+                <div style="flex:1;">
+                    <label>Unit <span class="required">*</span></label>
+                    <input type="text" name="unit" list="unitList"
+                           value="<?php echo htmlspecialchars($row['unit'] ?? 'pcs'); ?>" required>
+                    <datalist id="unitList">
+                        <option value="pcs">
+                        <option value="box">
+                        <option value="ml">
+                        <option value="mg">
+                        <option value="vial">
+                        <option value="bottle">
+                        <option value="pack">
+                    </datalist>
+                </div>
             </div>
 
             <div class="form-group">
@@ -177,8 +209,9 @@ $row = $r->fetch_assoc();
             </div>
 
             <div class="form-group">
-                <label>Expiration Date <span class="required">*</span></label>
-                <input type="date" name="exp" value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>" required>
+                <label>Expiration Date <span class="required" id="expReq" style="<?php echo $row['type'] == 'consumable' ? 'display:none;' : ''; ?>">*</span></label>
+                <input type="date" name="exp" id="expDate" value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>" <?php echo $row['type'] == 'medicine' ? 'required' : ''; ?>>
+                <small style="color:#7f8c8d; display:block; margin-top:5px;">(Optional for consumables)</small>
             </div>
 
             <div class="button-group">
@@ -200,6 +233,23 @@ $row = $r->fetch_assoc();
         }
     });
     form.addEventListener('submit', () => { formChanged = false; });
+
+    function updateRequiredFields() {
+        const type = document.getElementById('typeSelect').value;
+        const expInput = document.getElementById('expDate');
+        const expStar = document.getElementById('expReq');
+        
+        if (type === 'medicine') {
+            expInput.required = true;
+            expStar.style.display = 'inline';
+        } else {
+            expInput.required = false;
+            expStar.style.display = 'none';
+        }
+    }
+
+    // Initial check
+    document.addEventListener('DOMContentLoaded', updateRequiredFields);
 </script>
 
 </body>
