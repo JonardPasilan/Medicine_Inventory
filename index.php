@@ -20,14 +20,6 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
 ?>
 
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6f9;
-            min-height: 100vh;
-        }
-
         .container {
             max-width: 1200px;
             margin: 30px auto;
@@ -35,15 +27,16 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         }
 
         .header-card {
-            background: white;
-            border-radius: 10px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
             padding: 25px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-sm);
             text-align: center;
         }
-        .header-card h2 { color: #2c3e50; font-size: 28px; margin-bottom: 8px; }
-        .header-card p  { color: #7f8c8d; font-size: 14px; }
+        .header-card h2 { color: var(--color-text-primary); font-size: var(--text-2xl); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header-card p  { color: var(--color-text-secondary); font-size: var(--text-sm); }
 
         /* Dashboard Alerts */
         .alerts-dashboard {
@@ -53,62 +46,66 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             margin-bottom: 30px;
         }
         .alert-card {
-            background: white;
-            border-radius: 10px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
             padding: 20px;
             display: flex;
             align-items: center;
             gap: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-left: 5px solid #ccc;
-            transition: transform 0.2s ease;
+            box-shadow: var(--shadow-sm);
         }
-        .alert-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-        .alert-card.warning { border-left-color: #f39c12; }
-        .alert-card.danger { border-left-color: #e74c3c; }
-        .alert-card.info { border-left-color: #3498db; }
-        .alert-icon { font-size: 30px; }
-        .alert-details h3 { font-size: 24px; color: #2c3e50; margin-bottom: 2px; }
-        .alert-details p { font-size: 13px; color: #7f8c8d; margin: 0; }
+        .alert-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        
+        .alert-card.warning { border-left: 4px solid hsl(40, 90%, 50%); }
+        .alert-card.danger { border-left: 4px solid hsl(0, 80%, 50%); }
+        .alert-card.info { border-left: 4px solid hsl(210, 90%, 50%); }
+        
+        .alert-icon { font-size: 30px; color: var(--color-text-muted); }
+        .alert-card.warning .alert-icon { color: hsl(40, 90%, 50%); }
+        .alert-card.danger .alert-icon { color: hsl(0, 80%, 50%); }
+        .alert-card.info .alert-icon { color: hsl(210, 90%, 50%); }
+
+        .alert-details h3 { font-size: var(--text-xl); color: var(--color-text-primary); margin-bottom: 2px; }
+        .alert-details p { font-size: var(--text-xs); color: var(--color-text-secondary); margin: 0; }
 
         /* Search Section */
         .search-section {
-            background: white;
-            border-radius: 10px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-sm);
         }
-        .search-form { display: flex; gap: 10px; flex-wrap: wrap; }
+        .search-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .search-form input {
             flex: 1;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
+            padding: 10px 15px;
+            border: 1px solid var(--color-border);
+            background: var(--color-overlay);
+            border-radius: var(--radius-sm);
+            font-size: var(--text-sm);
+            color: var(--color-text-primary);
         }
         .search-form input:focus {
             outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+            border-color: var(--color-brand);
+            box-shadow: 0 0 0 2px var(--color-brand-light);
         }
         .search-form button {
-            padding: 12px 30px;
-            background: #1f4f87;
+            padding: 10px 20px;
+            background: var(--color-brand);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            font-size: 14px;
+            font-size: var(--text-sm);
             font-weight: 500;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
         }
         .search-form button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(31,79,135,0.4);
+            background: var(--color-brand-dark);
+            box-shadow: var(--shadow-xs);
         }
 
         /* Tabs Section */
@@ -119,56 +116,61 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             justify-content: center;
         }
         .tab-btn {
-            padding: 12px 25px;
-            background: white;
-            border: 2px solid transparent;
-            border-radius: 10px;
+            padding: 10px 20px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            font-weight: 600;
-            color: #7f8c8d;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-weight: 500;
+            font-size: var(--text-sm);
+            color: var(--color-text-secondary);
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        .tab-btn:hover { background: #f8f9fa; color: #1f4f87; }
+        .tab-btn:hover { background: var(--color-overlay); color: var(--color-text-primary); }
         .tab-btn.active {
-            background: #1f4f87;
-            color: white;
-            box-shadow: 0 4px 10px rgba(31,79,135,0.3);
+            background: var(--color-brand-light);
+            border-color: var(--color-brand-dark);
+            color: var(--color-brand-dark);
+            font-weight: 600;
         }
 
         .table-container {
-            background: white;
-            border-radius: 10px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
             overflow-x: auto;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: none; /* Hidden by default, JS will show active */
+            box-shadow: var(--shadow-sm);
+            display: none; 
         }
         .table-container.active { display: block; }
 
         table { width: 100%; border-collapse: collapse; }
         th {
-            background: #1f4f87;
-            color: white;
-            padding: 15px;
+            background: var(--color-overlay);
+            color: var(--color-text-secondary);
+            padding: 12px 15px;
             text-align: left;
             font-weight: 600;
-            font-size: 14px;
+            font-size: var(--text-xs);
+            border-bottom: 1px solid var(--color-border);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
-        td { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; color: #2c3e50; }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); font-size: var(--text-sm); }
 
         /* Group Rows */
-        .group-row { cursor: pointer; transition: background 0.2s; }
-        .group-row:hover { background: #f0f7ff !important; }
+        .group-row { cursor: pointer; }
+        .group-row:hover { background: var(--color-overlay) !important; }
 
         /* Batch details */
         .batch-detail-row td {
-            font-size: 13px;
-            border-bottom: 1px dashed #d0e4f7;
+            font-size: var(--text-xs);
+            border-bottom: 1px dashed var(--color-border);
             padding: 0;
             overflow: hidden;
+            background: var(--color-overlay);
         }
         .batch-anim-wrapper {
             max-height: 0;
@@ -181,47 +183,37 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         }
 
         .toggle-icon {
-            font-size: 10px;
-            color: #3498db;
+            color: var(--color-text-muted);
             margin-left: 6px;
-            display: inline-block;
-            transition: transform 0.3s;
+            display: inline-flex;
+            align-items: center;
         }
-        .toggle-icon.rotated { transform: rotate(180deg); }
 
         /* Status Badges */
-        .status-expired  { background: #fee; color: #e74c3c; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-        .status-lowstock { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-        .status-ok       { background: #d5f4e6; color: #27ae60; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+        .status-expired  { background: hsl(0, 100%, 97%); color: hsl(0, 70%, 40%); border: 1px solid hsl(0, 70%, 80%); padding: 2px 8px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .status-lowstock { background: hsl(40, 100%, 96%); color: hsl(40, 70%, 40%); border: 1px solid hsl(40, 70%, 80%); padding: 2px 8px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .status-ok       { background: hsl(140, 100%, 96%); color: hsl(140, 70%, 35%); border: 1px solid hsl(140, 70%, 80%); padding: 2px 8px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 
         .btn {
             padding: 6px 12px;
-            border: none;
-            border-radius: 5px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: var(--text-xs);
+            font-weight: 500;
             text-decoration: none;
-            display: inline-block;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
         }
-        .btn-edit   { background: #3498db; color: white; min-width: 90px; text-align: center; }
-        .btn-delete { background: #e74c3c; color: white; min-width: 90px; text-align: center; }
-        .btn-stock  { background: #8e44ad; color: white; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        /* Ripple Effect */
-        .ripple {
-            position: absolute;
-            background: rgba(255,255,255,0.4);
-            border-radius: 50%;
-            transform: scale(0);
-            animation: ripple-animation 0.6s linear;
-            pointer-events: none;
-        }
-        @keyframes ripple-animation { to { transform: scale(4); opacity: 0; } }
+        .btn-edit   { background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-secondary); }
+        .btn-edit:hover { background: var(--color-overlay); color: var(--color-text-primary); border-color: var(--color-border-strong); box-shadow: var(--shadow-xs); }
+        
+        .btn-delete { background: hsl(0, 100%, 97%); border: 1px solid hsl(0, 70%, 80%); color: hsl(0, 70%, 40%); }
+        .btn-delete:hover { background: hsl(0, 100%, 95%); color: hsl(0, 70%, 35%); border-color: hsl(0, 70%, 70%); box-shadow: var(--shadow-xs); }
+        
+        .btn-stock  { background: var(--color-brand); color: white; border: 1px solid var(--color-brand-dark); }
+        .btn-stock:hover { background: var(--color-brand-dark); box-shadow: var(--shadow-xs); }
 
         #loadingOverlay {
             display: none;
@@ -235,47 +227,47 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         }
         .spinner {
             width: 40px; height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #1f4f87;
+            border: 4px solid var(--color-border);
+            border-top: 4px solid var(--color-brand);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .no-data { text-align: center; padding: 40px; color: #7f8c8d; font-size: 15px; }
+        .no-data { text-align: center; padding: 40px; color: var(--color-text-muted); font-size: var(--text-sm); }
 
         /* Custom Delete Modal */
         #deleteModal {
             display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.5); z-index: 10000;
+            background: rgba(0,0,0,0.4); z-index: 10000;
             align-items: center; justify-content: center;
-            backdrop-filter: blur(3px); opacity: 0;
+            backdrop-filter: blur(2px); opacity: 0;
             transition: opacity 0.3s ease;
         }
         #deleteModal.show { opacity: 1; }
         .modal-content {
-            background: white; border-radius: 12px; padding: 30px;
+            background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 30px;
             width: 90%; max-width: 400px; text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: var(--shadow-lg);
+            transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         #deleteModal.show .modal-content { transform: scale(1); }
-        .modal-icon { font-size: 50px; color: #e74c3c; margin-bottom: 15px; }
-        .modal-title { font-size: 22px; color: #2c3e50; margin-bottom: 10px; }
-        .modal-text { color: #7f8c8d; font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+        .modal-icon { font-size: 40px; color: hsl(0, 70%, 50%); margin-bottom: 15px; display: inline-block; }
+        .modal-title { font-size: var(--text-lg); color: var(--color-text-primary); margin-bottom: 8px; font-weight: 600; }
+        .modal-text { color: var(--color-text-secondary); font-size: var(--text-sm); margin-bottom: 25px; line-height: 1.5; }
         .modal-actions { display: flex; gap: 15px; justify-content: center; }
         .btn-modal {
-            padding: 10px 20px; border: none; border-radius: 8px;
-            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+            padding: 10px 20px; border: 1px solid transparent; border-radius: var(--radius-sm);
+            font-size: var(--text-sm); font-weight: 500; cursor: pointer;
         }
-        .btn-modal-cancel { background: #ecf0f1; color: #2c3e50; }
-        .btn-modal-cancel:hover { background: #bdc3c7; }
-        .btn-modal-confirm { background: #e74c3c; color: white; }
-        .btn-modal-confirm:hover { background: #c0392b; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(231,76,60,0.3); }
+        .btn-modal-cancel { background: var(--color-surface); color: var(--color-text-secondary); border-color: var(--color-border); }
+        .btn-modal-cancel:hover { background: var(--color-overlay); color: var(--color-text-primary); border-color: var(--color-border-strong); }
+        .btn-modal-confirm { background: hsl(0, 70%, 50%); color: white; border-color: hsl(0, 70%, 40%); }
+        .btn-modal-confirm:hover { background: hsl(0, 70%, 45%); box-shadow: var(--shadow-sm); }
 
         @media (max-width: 768px) {
-            th, td { padding: 10px; font-size: 12px; }
-            .tab-btn { padding: 10px 15px; font-size: 13px; }
+            th, td { padding: 10px; font-size: var(--text-xs); }
+            .tab-btn { padding: 8px 12px; font-size: var(--text-xs); }
         }
     </style>
 </head>
@@ -287,33 +279,33 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
 
 <div class="container">
     <div class="header-card">
-        <h2>🏥 Clinic Inventory Management</h2>
+        <h2><i data-lucide="hospital"></i> Clinic Inventory Management</h2>
         <p>Manage medicines and consumables in one place</p>
     </div>
 
     <!-- Alerts Dashboard -->
     <div class="alerts-dashboard">
         <div class="alert-card warning">
-            <div class="alert-icon">📉</div>
+            <div class="alert-icon"><i data-lucide="trending-down"></i></div>
             <div class="alert-details">
                 <h3><?php echo $low_stock_count; ?></h3>
                 <p>Low Stock Items (≤ 5)</p>
             </div>
         </div>
         <div class="alert-card danger" style="position: relative; cursor: pointer;" onclick="window.location.href='expired.php'">
-            <div class="alert-icon">⚠️</div>
+            <div class="alert-icon"><i data-lucide="alert-triangle"></i></div>
             <div class="alert-details">
                 <h3><?php echo $expired_count; ?></h3>
                 <p>Expired Batches (Archived)</p>
             </div>
             <?php if ($expired_count > 0): ?>
-            <button onclick="event.stopPropagation(); clearExpiredBatches();" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); background:#c0392b; color:white; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; font-size:12px; transition:0.2s; z-index:10;">
-                🗑️ Clear All
+            <button onclick="event.stopPropagation(); clearExpiredBatches();" class="btn btn-delete" style="position:absolute; right:15px; top:50%; transform:translateY(-50%); z-index:10;">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Clear All
             </button>
             <?php endif; ?>
         </div>
         <div class="alert-card info">
-            <div class="alert-icon">📅</div>
+            <div class="alert-icon"><i data-lucide="calendar"></i></div>
             <div class="alert-details">
                 <h3><?php echo $expiring_soon_count; ?></h3>
                 <p>Expiring Soon (30 Days)</p>
@@ -324,18 +316,21 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
     <!-- Search Section -->
     <div class="search-section">
         <form method="GET" class="search-form" onsubmit="showLoading()">
-            <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="🔍 Search by name or description...">
+            <div style="position: relative; flex: 1;">
+                <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--color-text-muted);"></i>
+                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name or description..." style="padding-left: 36px; width: 100%;">
+            </div>
             <button type="submit">Search</button>
             <?php if ($search): ?>
-                <a href="index.php" class="btn" style="background:#95a5a6; color:white; padding:12px 20px; border-radius:8px;">Clear</a>
+                <a href="index.php" class="btn btn-edit">Clear</a>
             <?php endif; ?>
         </form>
     </div>
 
     <!-- Tabs -->
     <div class="tabs-container">
-        <button class="tab-btn active" onclick="switchTab('medicine')">💊 Medicines</button>
-        <button class="tab-btn" onclick="switchTab('consumable')">🧴 Consumables</button>
+        <button class="tab-btn active" onclick="switchTab('medicine')"><i data-lucide="pill" style="width:16px;height:16px;"></i> Medicines</button>
+        <button class="tab-btn" onclick="switchTab('consumable')"><i data-lucide="droplet" style="width:16px;height:16px;"></i> Consumables</button>
     </div>
 
     <!-- MEDICINES VIEW -->
@@ -421,25 +416,25 @@ function renderInventoryTable($conn, $type, $search) {
             $is_low = $total_qty <= 5;
 
             $status = '';
-            if ($is_exp) $status .= "<span class='status-expired'>⚠️ EXPIRED</span> ";
-            if ($is_soon) $status .= "<span class='status-lowstock'>📅 SOON</span> ";
-            if ($is_low) $status .= "<span class='status-lowstock'>📉 LOW</span> ";
-            if (!$is_exp && !$is_soon && !$is_low) $status = "<span class='status-ok'>✓ OK</span>";
+            if ($is_exp) $status .= "<span class='status-expired'><i data-lucide='alert-triangle' style='width:12px;height:12px;'></i> EXPIRED</span> ";
+            if ($is_soon) $status .= "<span class='status-lowstock'><i data-lucide='calendar' style='width:12px;height:12px;'></i> SOON</span> ";
+            if ($is_low) $status .= "<span class='status-lowstock'><i data-lucide='trending-down' style='width:12px;height:12px;'></i> LOW</span> ";
+            if (!$is_exp && !$is_soon && !$is_low) $status = "<span class='status-ok'><i data-lucide='check-circle-2' style='width:12px;height:12px;'></i> OK</span>";
 
-            $row_style = $is_exp ? "background:#fff5f5;" : "";
+            $row_style = $is_exp ? "background:hsl(0, 100%, 99%);" : "";
             
             echo "<tr class='group-row' onclick='toggleBatch(\"$gid\")' style='$row_style'>
                     <td>
-                        <strong>$gname</strong> <span class='toggle-icon' id='icon_$gid'>▼</span><br>
-                        <small style='color:#7f8c8d; font-size:11px;'>$batch_cnt batch(es)</small>
+                        <strong style='color:var(--color-text-primary);'>$gname</strong> <span class='toggle-icon' id='icon_$gid'><i data-lucide='chevron-down' style='width:14px;height:14px;'></i></span><br>
+                        <small style='color:var(--color-text-muted); font-size:var(--text-xs);'>$batch_cnt batch(es)</small>
                     </td>
-                    <td><span style='background:#e0e7ff; color:#3730a3; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600;'>$gcat</span></td>
-                    <td>$glabel</td>
-                    <td><strong>$total_qty</strong> <small style='color:#7f8c8d;'>$gunit</small></td>
+                    <td><span style='background:var(--color-brand-light); color:var(--color-brand-dark); padding:2px 8px; border-radius:var(--radius-full); font-size:var(--text-xs); font-weight:600;'>$gcat</span></td>
+                    <td style='color:var(--color-text-secondary);'>$glabel</td>
+                    <td><strong style='color:var(--color-text-primary);'>$total_qty</strong> <small style='color:var(--color-text-muted);'>$gunit</small></td>
                     <td>" . ($earliest ? date('M d, Y', strtotime($earliest)) : 'N/A') . "</td>
                     <td>$status</td>
                     <td onclick='event.stopPropagation()'>
-                        <a href='add.php?name=".urlencode($g['name'])."&label=".urlencode((string)$g['label'])."&type=$type&cat=".urlencode($gcat)."&unit=".urlencode($gunit)."' class='btn btn-stock'>📦 New Batch</a>
+                        <a href='add.php?name=".urlencode($g['name'])."&label=".urlencode((string)$g['label'])."&type=$type&cat=".urlencode($gcat)."&unit=".urlencode($gunit)."' class='btn btn-stock'><i data-lucide='package-plus' style='width:14px;height:14px;'></i> New Batch</a>
                     </td>
                   </tr>";
 
@@ -451,18 +446,18 @@ function renderInventoryTable($conn, $type, $search) {
             while ($b = $batches->fetch_assoc()) {
                 $bid = $b['id'];
                 $b_exp = $b['expiration_date'] && strtotime($b['expiration_date']) < strtotime($today);
-                $b_bg = $b_exp ? "background:#fffafa;" : "background:#f9f9f9;";
+                $b_bg = $b_exp ? "background:hsl(0, 100%, 98%);" : "background:var(--color-overlay);";
                 
                 $bunit = htmlspecialchars($b['unit'] ?? 'pcs');
                 echo "<tr class='batch-detail-row' data-grp='$gid' id='row_$bid' style='display:none; $b_bg'>
                         <td colspan='7' style='padding:0;'>
                             <div class='batch-anim-wrapper'>
                                 <div style='display:flex; justify-content:space-between; align-items:center;'>
-                                    <div>📦 Batch #{$b['batch_number']} <small style='color:#7f8c8d; margin-left:10px;'>Exp: " . ($b['expiration_date'] ? date('M d, Y', strtotime($b['expiration_date'])) : 'N/A') . "</small></div>
-                                    <div><strong>{$b['quantity']}</strong> <small style='color:#7f8c8d;'>$bunit</small></div>
+                                    <div style='display:flex; align-items:center; gap:6px;'><i data-lucide='package' style='width:14px;height:14px;color:var(--color-text-muted);'></i> Batch #{$b['batch_number']} <small style='color:var(--color-text-muted); margin-left:10px;'>Exp: " . ($b['expiration_date'] ? date('M d, Y', strtotime($b['expiration_date'])) : 'N/A') . "</small></div>
+                                    <div><strong style='color:var(--color-text-primary);'>{$b['quantity']}</strong> <small style='color:var(--color-text-muted);'>$bunit</small></div>
                                     <div style='display:flex; gap:8px;'>
-                                        <a href='edit.php?id=$bid' class='btn btn-edit'>✏️ Edit</a>
-                                        <button class='btn btn-delete' onclick='deleteBatch(event, $bid)'>🗑️ Delete</button>
+                                        <a href='edit.php?id=$bid' class='btn btn-edit'><i data-lucide='edit-2' style='width:14px;height:14px;'></i> Edit</a>
+                                        <button class='btn btn-delete' onclick='deleteBatch(event, $bid)'><i data-lucide='trash-2' style='width:14px;height:14px;'></i> Delete</button>
                                     </div>
                                 </div>
                             </div>
@@ -479,7 +474,7 @@ function renderInventoryTable($conn, $type, $search) {
 <!-- Custom Delete Confirmation Modal -->
 <div id="deleteModal">
     <div class="modal-content">
-        <div class="modal-icon">⚠️</div>
+        <div class="modal-icon"><i data-lucide="alert-circle" style="width: 48px; height: 48px; stroke-width: 1.5;"></i></div>
         <h3 class="modal-title">Delete Batch?</h3>
         <p class="modal-text">Are you sure you want to permanently delete this batch? This action cannot be undone.</p>
         <div class="modal-actions">
@@ -519,7 +514,15 @@ function renderInventoryTable($conn, $type, $search) {
                 setTimeout(() => r.style.display = 'none', 400);
             }
         });
-        icon.classList.toggle('rotated', isOpening);
+        
+        // update lucide icon rotation
+        if (icon) {
+            const svg = icon.querySelector('svg');
+            if (svg) {
+                svg.style.transition = 'transform 0.3s';
+                svg.style.transform = isOpening ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+        }
     }
 
     function showLoading() {
