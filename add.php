@@ -207,7 +207,12 @@ $is_new_batch  = ($prefill_name !== '');
 <div class="container">
     <div class="form-card">
         <div class="form-header">
-            <div class="icon"><?php echo $prefill_type == 'medicine' ? '💊' : '🧴'; ?></div>
+            <div class="icon"><?php 
+                if ($prefill_type == 'medicine') echo '💊';
+                elseif ($prefill_type == 'consumable') echo '🧴';
+                elseif ($prefill_type == 'dental') echo '🦷';
+                else echo '🩺'; 
+            ?></div>
             <h2><?php echo $is_new_batch ? 'Add New Batch' : 'Add New Item'; ?></h2>
             <p><?php echo $is_new_batch
                 ? 'Creating a new batch entry for this ' . $prefill_type
@@ -235,6 +240,16 @@ $is_new_batch  = ($prefill_name !== '');
             $u = mysqli_real_escape_string($conn, trim($_POST['unit']        ?? 'pcs'));
             $q = intval($_POST['quantity'] ?? 0);
             $e = mysqli_real_escape_string($conn, trim($_POST['exp']        ?? ''));
+            
+            // Equipment fields
+            $brand = mysqli_real_escape_string($conn, trim($_POST['brand_serial'] ?? ''));
+            $ris = mysqli_real_escape_string($conn, trim($_POST['ris_id'] ?? ''));
+            $color = mysqli_real_escape_string($conn, trim($_POST['color'] ?? ''));
+            $date_acq = mysqli_real_escape_string($conn, trim($_POST['date_acquired'] ?? ''));
+            $qsrv = intval($_POST['qty_serviceable'] ?? 0);
+            $qunsrv = intval($_POST['qty_unserviceable'] ?? 0);
+            $qrep = intval($_POST['qty_repair'] ?? 0);
+            $rem = mysqli_real_escape_string($conn, trim($_POST['remarks'] ?? ''));
 
             $errors = [];
             if (empty($n)) $errors[] = "Name is required.";
@@ -254,8 +269,10 @@ $is_new_batch  = ($prefill_name !== '');
                 }
 
                 $val_exp = !empty($e) ? "'$e'" : "NULL";
-                $sql = "INSERT INTO medicines (name, label, type, category, unit, batch_number, quantity, expiration_date)
-                        VALUES ('$n', '$l', '$t', '$c', '$u', $next_bn, '$q', $val_exp)";
+                $val_acq = !empty($date_acq) ? "'$date_acq'" : "NULL";
+                
+                $sql = "INSERT INTO medicines (name, label, type, category, unit, batch_number, quantity, expiration_date, brand_serial, ris_id, color, date_acquired, qty_serviceable, qty_unserviceable, qty_repair, remarks)
+                        VALUES ('$n', '$l', '$t', '$c', '$u', $next_bn, '$q', $val_exp, '$brand', '$ris', '$color', $val_acq, $qsrv, $qunsrv, $qrep, '$rem')";
 
                 if ($conn->query($sql)) {
                     $new_id = $conn->insert_id;
@@ -280,6 +297,8 @@ $is_new_batch  = ($prefill_name !== '');
                 <select name="type" id="typeSelect" required <?php echo $is_new_batch ? 'disabled' : ''; ?> onchange="updateRequiredFields()">
                     <option value="medicine" <?php echo $prefill_type == 'medicine' ? 'selected' : ''; ?>>💊 Medicine</option>
                     <option value="consumable" <?php echo $prefill_type == 'consumable' ? 'selected' : ''; ?>>🧴 Consumable</option>
+                    <option value="dental" <?php echo $prefill_type == 'dental' ? 'selected' : ''; ?>>🦷 Dental Device & Equipment</option>
+                    <option value="medical" <?php echo $prefill_type == 'medical' ? 'selected' : ''; ?>>🩺 Medical Device & Equipment</option>
                 </select>
                 <?php if($is_new_batch): ?>
                     <input type="hidden" name="type" value="<?php echo $prefill_type; ?>">
@@ -341,11 +360,54 @@ $is_new_batch  = ($prefill_name !== '');
             </div>
 
             <div class="form-group">
-                <label>Expiration Date <span class="required" id="expReq" style="<?php echo $prefill_type == 'consumable' ? 'display:none;' : ''; ?>">*</span></label>
+                <label>Expiration Date <span class="required" id="expReq" style="<?php echo $prefill_type == 'medicine' ? '' : 'display:none;'; ?>">*</span></label>
                 <input type="date" name="exp" id="expDate" <?php echo $prefill_type == 'medicine' ? 'required' : ''; ?>>
                 <small style="color:#7f8c8d; display:block; margin-top:5px;">
                     Set the expiration date for this batch. (Optional for consumables)
                 </small>
+            </div>
+
+            <!-- Equipment Specific Fields -->
+            <div id="equipmentFields" style="display:none; background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; color: #2c3e50;">Equipment Details</h4>
+                <div class="form-group" style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label>Brand/Serial #</label>
+                        <input type="text" name="brand_serial" placeholder="e.g., SN-12345">
+                    </div>
+                    <div style="flex:1;">
+                        <label>RIS # / ICS # / PAR #</label>
+                        <input type="text" name="ris_id" placeholder="e.g., RIS No. 21-6-136">
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label>Color</label>
+                        <input type="text" name="color" placeholder="e.g., Blue, Orange">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Date Acquired</label>
+                        <input type="date" name="date_acquired">
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>Serviceable</label>
+                        <input type="number" name="qty_serviceable" min="0" value="0">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Unserviceable</label>
+                        <input type="number" name="qty_unserviceable" min="0" value="0">
+                    </div>
+                    <div style="flex:1;">
+                        <label>For Repair</label>
+                        <input type="number" name="qty_repair" min="0" value="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Remarks / Notes</label>
+                    <textarea name="remarks" rows="2" placeholder="e.g., Donated by LGU year 2021"></textarea>
+                </div>
             </div>
 
             <button type="submit" name="add" class="btn-submit">
@@ -412,6 +474,7 @@ $is_new_batch  = ($prefill_name !== '');
         const type = document.getElementById('typeSelect').value;
         const expInput = document.getElementById('expDate');
         const expStar = document.getElementById('expReq');
+        const eqFields = document.getElementById('equipmentFields');
         
         if (type === 'medicine') {
             expInput.required = true;
@@ -419,6 +482,12 @@ $is_new_batch  = ($prefill_name !== '');
         } else {
             expInput.required = false;
             expStar.style.display = 'none';
+        }
+
+        if (type === 'dental' || type === 'medical') {
+            eqFields.style.display = 'block';
+        } else {
+            eqFields.style.display = 'none';
         }
     }
 

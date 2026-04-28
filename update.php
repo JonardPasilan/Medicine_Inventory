@@ -11,8 +11,19 @@ if(isset($_POST['update'])){
     $q = intval($_POST['quantity'] ?? 0);
     $e = $conn->real_escape_string((string)($_POST['exp'] ?? ''));
 
+    // Equipment fields
+    $brand = $conn->real_escape_string((string)($_POST['brand_serial'] ?? ''));
+    $ris = $conn->real_escape_string((string)($_POST['ris_id'] ?? ''));
+    $color = $conn->real_escape_string((string)($_POST['color'] ?? ''));
+    $date_acq = $conn->real_escape_string((string)($_POST['date_acquired'] ?? ''));
+    $qsrv = intval($_POST['qty_serviceable'] ?? 0);
+    $qunsrv = intval($_POST['qty_unserviceable'] ?? 0);
+    $qrep = intval($_POST['qty_repair'] ?? 0);
+    $rem = $conn->real_escape_string((string)($_POST['remarks'] ?? ''));
+
     if($id > 0){
         $val_exp = !empty($e) ? "'$e'" : "NULL";
+        $val_acq = !empty($date_acq) ? "'$date_acq'" : "NULL";
         $conn->query("UPDATE medicines SET 
             name='$n',
             label='$l',
@@ -20,7 +31,15 @@ if(isset($_POST['update'])){
             category='$c',
             unit='$u',
             quantity='$q',
-            expiration_date=$val_exp
+            expiration_date=$val_exp,
+            brand_serial='$brand',
+            ris_id='$ris',
+            color='$color',
+            date_acquired=$val_acq,
+            qty_serviceable=$qsrv,
+            qty_unserviceable=$qunsrv,
+            qty_repair=$qrep,
+            remarks='$rem'
             WHERE id=$id
         ");
     }

@@ -331,6 +331,8 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
     <div class="tabs-container">
         <button class="tab-btn active" onclick="switchTab('medicine')"><i data-lucide="pill" style="width:16px;height:16px;"></i> Medicines</button>
         <button class="tab-btn" onclick="switchTab('consumable')"><i data-lucide="droplet" style="width:16px;height:16px;"></i> Consumables</button>
+        <button class="tab-btn" onclick="switchTab('dental')"><i data-lucide="activity" style="width:16px;height:16px;"></i> Dental Device & Equipment</button>
+        <button class="tab-btn" onclick="switchTab('medical')"><i data-lucide="stethoscope" style="width:16px;height:16px;"></i> Medical Device & Equipment</button>
     </div>
 
     <!-- MEDICINES VIEW -->
@@ -372,7 +374,118 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             </tbody>
         </table>
     </div>
+
+    <!-- DENTAL VIEW -->
+    <div id="dentalView" class="table-container">
+        <table class="equipment-table">
+            <thead>
+                <tr>
+                    <th rowspan="2">No.</th>
+                    <th rowspan="2">Item Description</th>
+                    <th rowspan="2">Stock Qty/Unit</th>
+                    <th rowspan="2">Brand/Serial #</th>
+                    <th rowspan="2">RIS #/ICS #/PAR #</th>
+                    <th rowspan="2">Color</th>
+                    <th rowspan="2">Date Acquired</th>
+                    <th colspan="3" style="text-align: center; border-bottom: 1px solid var(--color-border);">Condition</th>
+                    <th rowspan="2">Remarks/Notes</th>
+                    <th rowspan="2">Actions</th>
+                </tr>
+                <tr>
+                    <th>Serviceable</th>
+                    <th>Unserviceable</th>
+                    <th>For Repair</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php renderEquipmentTable($conn, 'dental', $search); ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MEDICAL VIEW -->
+    <div id="medicalView" class="table-container">
+        <table class="equipment-table">
+            <thead>
+                <tr>
+                    <th rowspan="2">No.</th>
+                    <th rowspan="2">Item Description</th>
+                    <th rowspan="2">Stock Qty/Unit</th>
+                    <th rowspan="2">Brand/Serial #</th>
+                    <th rowspan="2">RIS #/ICS #/PAR #</th>
+                    <th rowspan="2">Color</th>
+                    <th rowspan="2">Date Acquired</th>
+                    <th colspan="3" style="text-align: center; border-bottom: 1px solid var(--color-border);">Condition</th>
+                    <th rowspan="2">Remarks/Notes</th>
+                    <th rowspan="2">Actions</th>
+                </tr>
+                <tr>
+                    <th>Serviceable</th>
+                    <th>Unserviceable</th>
+                    <th>For Repair</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php renderEquipmentTable($conn, 'medical', $search); ?>
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<?php
+/**
+ * Helper to render the equipment table (Dental and Medical)
+ */
+function renderEquipmentTable($conn, $type, $search) {
+    $where = "WHERE type = '$type' AND is_archived = 0";
+    if ($search) {
+        $where .= " AND (name LIKE '%$search%' OR label LIKE '%$search%' OR brand_serial LIKE '%$search%' OR ris_id LIKE '%$search%')";
+    }
+
+    $res = $conn->query("SELECT * FROM medicines $where ORDER BY name ASC");
+    if ($res && $res->num_rows > 0) {
+        $i = 1;
+        while ($row = $res->fetch_assoc()) {
+            $id = $row['id'];
+            $name_label = htmlspecialchars($row['name']);
+            if(!empty($row['label'])) $name_label .= " - " . htmlspecialchars((string)$row['label']);
+            $qty = (int)$row['quantity'];
+            $unit = htmlspecialchars($row['unit'] ?? 'unit');
+            $brand = htmlspecialchars((string)$row['brand_serial']);
+            $ris = htmlspecialchars((string)$row['ris_id']);
+            $color = htmlspecialchars((string)$row['color']);
+            $acq = $row['date_acquired'] ? date('m/d/Y', strtotime($row['date_acquired'])) : 'N/A';
+            $srv = (int)$row['qty_serviceable'];
+            $unsrv = (int)$row['qty_unserviceable'];
+            $rep = (int)$row['qty_repair'];
+            $rem = htmlspecialchars((string)$row['remarks']);
+
+            echo "<tr>
+                    <td>$i</td>
+                    <td><strong style='color:var(--color-text-primary);'>$name_label</strong></td>
+                    <td>$qty <small style='color:var(--color-text-muted);'>$unit</small></td>
+                    <td>$brand</td>
+                    <td>$ris</td>
+                    <td>$color</td>
+                    <td>$acq</td>
+                    <td style='text-align:center;'>$srv</td>
+                    <td style='text-align:center;'>$unsrv</td>
+                    <td style='text-align:center;'>$rep</td>
+                    <td>$rem</td>
+                    <td>
+                        <div style='display:flex; gap:8px;'>
+                            <a href='edit.php?id=$id' class='btn btn-edit'><i data-lucide='edit-2' style='width:14px;height:14px;'></i> Edit</a>
+                            <button class='btn btn-delete' onclick='deleteBatch(event, $id)'><i data-lucide='trash-2' style='width:14px;height:14px;'></i> Delete</button>
+                        </div>
+                    </td>
+                  </tr>";
+            $i++;
+        }
+    } else {
+        echo "<tr><td colspan='12' class='no-data'>No records found.</td></tr>";
+    }
+}
+?>
 
 <?php
 /**
@@ -466,7 +579,7 @@ function renderInventoryTable($conn, $type, $search) {
             }
         }
     } else {
-        echo "<tr><td colspan='6' class='no-data'>No records found for " . ($type == 'medicine' ? 'medicines' : 'consumables') . ".</td></tr>";
+        echo "<tr><td colspan='7' class='no-data'>No records found.</td></tr>";
     }
 }
 ?>
@@ -493,10 +606,18 @@ function renderInventoryTable($conn, $type, $search) {
             document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
             document.getElementById('medicineView').classList.add('active');
             localStorage.setItem('activeInventoryTab', 'medicine');
-        } else {
+        } else if (type === 'consumable') {
             document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
             document.getElementById('consumableView').classList.add('active');
             localStorage.setItem('activeInventoryTab', 'consumable');
+        } else if (type === 'dental') {
+            document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+            document.getElementById('dentalView').classList.add('active');
+            localStorage.setItem('activeInventoryTab', 'dental');
+        } else if (type === 'medical') {
+            document.querySelector('.tab-btn:nth-child(4)').classList.add('active');
+            document.getElementById('medicalView').classList.add('active');
+            localStorage.setItem('activeInventoryTab', 'medical');
         }
     }
 

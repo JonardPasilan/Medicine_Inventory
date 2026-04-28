@@ -158,6 +158,8 @@ $row = $r->fetch_assoc();
                 <select name="type" id="typeSelect" required onchange="updateRequiredFields()">
                     <option value="medicine" <?php echo $row['type'] == 'medicine' ? 'selected' : ''; ?>>💊 Medicine</option>
                     <option value="consumable" <?php echo $row['type'] == 'consumable' ? 'selected' : ''; ?>>🧴 Consumable</option>
+                    <option value="dental" <?php echo $row['type'] == 'dental' ? 'selected' : ''; ?>>🦷 Dental Device & Equipment</option>
+                    <option value="medical" <?php echo $row['type'] == 'medical' ? 'selected' : ''; ?>>🩺 Medical Device & Equipment</option>
                 </select>
             </div>
 
@@ -209,9 +211,52 @@ $row = $r->fetch_assoc();
             </div>
 
             <div class="form-group">
-                <label>Expiration Date <span class="required" id="expReq" style="<?php echo $row['type'] == 'consumable' ? 'display:none;' : ''; ?>">*</span></label>
+                <label>Expiration Date <span class="required" id="expReq" style="<?php echo $row['type'] == 'medicine' ? '' : 'display:none;'; ?>">*</span></label>
                 <input type="date" name="exp" id="expDate" value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>" <?php echo $row['type'] == 'medicine' ? 'required' : ''; ?>>
                 <small style="color:#7f8c8d; display:block; margin-top:5px;">(Optional for consumables)</small>
+            </div>
+
+            <!-- Equipment Specific Fields -->
+            <div id="equipmentFields" style="display:none; background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; color: #2c3e50;">Equipment Details</h4>
+                <div class="form-group" style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label>Brand/Serial #</label>
+                        <input type="text" name="brand_serial" value="<?php echo htmlspecialchars((string)($row['brand_serial'] ?? '')); ?>">
+                    </div>
+                    <div style="flex:1;">
+                        <label>RIS # / ICS # / PAR #</label>
+                        <input type="text" name="ris_id" value="<?php echo htmlspecialchars((string)($row['ris_id'] ?? '')); ?>">
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label>Color</label>
+                        <input type="text" name="color" value="<?php echo htmlspecialchars((string)($row['color'] ?? '')); ?>">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Date Acquired</label>
+                        <input type="date" name="date_acquired" value="<?php echo htmlspecialchars((string)($row['date_acquired'] ?? '')); ?>">
+                    </div>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>Serviceable</label>
+                        <input type="number" name="qty_serviceable" min="0" value="<?php echo (int)($row['qty_serviceable'] ?? 0); ?>">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Unserviceable</label>
+                        <input type="number" name="qty_unserviceable" min="0" value="<?php echo (int)($row['qty_unserviceable'] ?? 0); ?>">
+                    </div>
+                    <div style="flex:1;">
+                        <label>For Repair</label>
+                        <input type="number" name="qty_repair" min="0" value="<?php echo (int)($row['qty_repair'] ?? 0); ?>">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Remarks / Notes</label>
+                    <textarea name="remarks" rows="2" style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:8px; font-family:inherit;"><?php echo htmlspecialchars((string)($row['remarks'] ?? '')); ?></textarea>
+                </div>
             </div>
 
             <div class="button-group">
@@ -238,6 +283,7 @@ $row = $r->fetch_assoc();
         const type = document.getElementById('typeSelect').value;
         const expInput = document.getElementById('expDate');
         const expStar = document.getElementById('expReq');
+        const eqFields = document.getElementById('equipmentFields');
         
         if (type === 'medicine') {
             expInput.required = true;
@@ -245,6 +291,12 @@ $row = $r->fetch_assoc();
         } else {
             expInput.required = false;
             expStar.style.display = 'none';
+        }
+
+        if (type === 'dental' || type === 'medical') {
+            eqFields.style.display = 'block';
+        } else {
+            eqFields.style.display = 'none';
         }
     }
 
