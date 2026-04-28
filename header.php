@@ -158,5 +158,6 @@
     <a href="add.php" class="<?php echo $current_page == 'add.php' ? 'active' : ''; ?>"><i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i> Add</a>
     <a href="import.php" class="<?php echo $current_page == 'import.php' ? 'active' : ''; ?>"><i data-lucide="download" style="width: 16px; height: 16px;"></i> Import</a>
     <a href="dispense.php" class="<?php echo $current_page == 'dispense.php' ? 'active' : ''; ?>"><i data-lucide="pill" style="width: 16px; height: 16px;"></i> Dispense</a>
+    <a href="borrowers_slip.php" class="<?php echo $current_page == 'borrowers_slip.php' ? 'active' : ''; ?>"><i data-lucide="shopping-cart" style="width: 16px; height: 16px;"></i> Borrower's Slip</a>
     <a href="logs.php" class="<?php echo $current_page == 'logs.php' ? 'active' : ''; ?>"><i data-lucide="clipboard-list" style="width: 16px; height: 16px;"></i> Logs</a>
 </div>

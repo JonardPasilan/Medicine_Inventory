@@ -65,6 +65,29 @@ if (!in_array('prescriber_name', $existing_log_cols)) {
     $conn->query("ALTER TABLE logs ADD COLUMN prescriber_name VARCHAR(100) DEFAULT NULL AFTER patient_name");
 }
 
+// Borrower's Slip Tables
+$conn->query("CREATE TABLE IF NOT EXISTS `borrowers_slips` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `borrower_name` varchar(255) NOT NULL,
+  `category` enum('Student', 'Personnel') NOT NULL,
+  `availability` enum('Yes', 'No') NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$conn->query("CREATE TABLE IF NOT EXISTS `borrower_slip_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `slip_id` int(11) NOT NULL,
+  `item_no` varchar(50) DEFAULT NULL,
+  `quantity` int(11) NOT NULL,
+  `item_description` varchar(255) NOT NULL,
+  `date_released` datetime DEFAULT NULL,
+  `date_returned` datetime DEFAULT NULL,
+  `remarks_purpose` text DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_slip` FOREIGN KEY (`slip_id`) REFERENCES `borrowers_slips`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 // Auto-Archive of Expired/Empty Stocks
 $conn->query("UPDATE medicines SET is_archived = 1 WHERE quantity <= 0 OR (expiration_date IS NOT NULL AND expiration_date < CURDATE())");
 
