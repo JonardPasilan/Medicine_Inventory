@@ -42,6 +42,9 @@ if(isset($_POST['update'])){
             remarks='$rem'
             WHERE id=$id
         ");
+        
+        // Log the update action
+        $conn->query("INSERT INTO logs (medicine_id, quantity, action) VALUES ($id, $q, 'Item Updated')");
     }
 
     header("Location: index.php");

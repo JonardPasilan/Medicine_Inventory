@@ -1,5 +1,17 @@
 <?php
 require_once __DIR__ . '/db.php';
+
+// Handle Delete Logs (MUST BE BEFORE header.php)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_logs'])) {
+    if (!empty($_POST['log_ids']) && is_array($_POST['log_ids'])) {
+        $ids = array_map('intval', $_POST['log_ids']);
+        $ids_str = implode(',', $ids);
+        $conn->query("DELETE FROM logs WHERE id IN ($ids_str)");
+        header("Location: logs.php?deleted=" . count($ids));
+        exit();
+    }
+}
+
 require_once __DIR__ . '/header.php';
 ?>
 <!DOCTYPE html>
@@ -147,11 +159,17 @@ require_once __DIR__ . '/header.php';
 
 
 <div class="container">
+    <?php if (isset($_GET['deleted'])): ?>
+        <div style="background: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 500;">
+            ✅ Successfully deleted <?php echo intval($_GET['deleted']); ?> log record(s).
+        </div>
+    <?php endif; ?>
+
     <div class="header-card">
         <div class="header-content">
             <div class="icon">📋</div>
-            <h2>Medicine Activity Logs</h2>
-            <p>Dispense records and batch additions — per batch with expiration tracking</p>
+            <h2>Inventory Activity Logs</h2>
+            <p>Dispense records, batch additions, and item updates</p>
         </div>
     </div>
 
@@ -161,13 +179,6 @@ require_once __DIR__ . '/header.php';
     $today_dispensed    = $conn->query("SELECT SUM(quantity) AS t FROM logs WHERE action = 'Released to patient' AND DATE(date) = CURDATE()")->fetch_assoc()['t'];
     $batches_added      = $conn->query("SELECT COUNT(*) AS t FROM logs WHERE action = 'New Batch Added'")->fetch_assoc()['t'];
 
-    // Distinct medicines for filter (using LEFT JOIN to include logs of deleted batches)
-    $meds_list = $conn->query("
-        SELECT DISTINCT m.id, m.name
-        FROM logs l
-        LEFT JOIN medicines m ON l.medicine_id = m.id
-        WHERE m.id IS NOT NULL
-        ORDER BY m.name ASC");
     ?>
 
     <div class="stats">
@@ -192,17 +203,13 @@ require_once __DIR__ . '/header.php';
     <div class="filter-section">
         <form method="GET" class="filter-form">
             <div class="filter-group">
-                <label>🔍 Filter by Medicine</label>
-                <select name="medicine_id">
-                    <option value="">All Medicines</option>
-                    <?php
-                    if ($meds_list && $meds_list->num_rows > 0) {
-                        while ($m = $meds_list->fetch_assoc()) {
-                            $sel = (isset($_GET['medicine_id']) && $_GET['medicine_id'] == $m['id']) ? 'selected' : '';
-                            echo "<option value='{$m['id']}' $sel>" . htmlspecialchars($m['name']) . "</option>";
-                        }
-                    }
-                    ?>
+                <label>🔍 Filter by Type</label>
+                <select name="item_type">
+                    <option value="">All Types</option>
+                    <option value="medicine" <?php echo (isset($_GET['item_type']) && $_GET['item_type'] === 'medicine') ? 'selected' : ''; ?>>Medicines</option>
+                    <option value="consumable" <?php echo (isset($_GET['item_type']) && $_GET['item_type'] === 'consumable') ? 'selected' : ''; ?>>Consumables Supplies</option>
+                    <option value="dental" <?php echo (isset($_GET['item_type']) && $_GET['item_type'] === 'dental') ? 'selected' : ''; ?>>Dental Device & Equipment</option>
+                    <option value="medical" <?php echo (isset($_GET['item_type']) && $_GET['item_type'] === 'medical') ? 'selected' : ''; ?>>Medical Device & Equipment</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -211,7 +218,7 @@ require_once __DIR__ . '/header.php';
                     <option value="">All Actions</option>
                     <?php
                     $cur_action = isset($_GET['action']) ? $_GET['action'] : '';
-                    $actions = ['Released to patient', 'New Batch Added'];
+                    $actions = ['Released to patient', 'New Batch Added', 'Item Updated'];
                     foreach ($actions as $a) {
                         $sel = ($cur_action === $a) ? 'selected' : '';
                         echo "<option value='" . htmlspecialchars($a, ENT_QUOTES) . "' $sel>" . htmlspecialchars($a) . "</option>";
@@ -237,17 +244,20 @@ require_once __DIR__ . '/header.php';
         </form>
     </div>
 
-    <div class="export-section">
-        <button onclick="exportToCSV()" class="btn-export">📊 Export to CSV</button>
-    </div>
+    <form method="POST" id="logsForm">
+        <div class="export-section" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button type="submit" name="delete_logs" class="btn-delete" onclick="return confirm('Are you sure you want to delete selected logs?');" style="background:#e74c3c; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:500;">🗑️ Delete Selected</button>
+            <button type="button" onclick="exportToCSV()" class="btn-export">📊 Export to CSV</button>
+        </div>
 
-    <div class="table-container">
-        <table id="logTable">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Medicine (Batch)</th>
-                    <th>Batch Expiry</th>
+        <div class="table-container">
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
+                        <th>#</th>
+                    <th>Item Details</th>
+                    <th>Expiry / Procured Date</th>
                     <th>Qty</th>
                     <th>Action</th>
                     <th>Details</th>
@@ -269,14 +279,16 @@ require_once __DIR__ . '/header.php';
                     m.name,
                     m.label,
                     m.batch_number,
-                    m.expiration_date
+                    m.expiration_date,
+                    m.type,
+                    m.date_acquired
                 FROM logs l
                 LEFT JOIN medicines m ON l.medicine_id = m.id
                 WHERE 1=1";
 
-            if (!empty($_GET['medicine_id'])) {
-                $fid = intval($_GET['medicine_id']);
-                $query .= " AND l.medicine_id = $fid";
+            if (!empty($_GET['item_type'])) {
+                $ftype = mysqli_real_escape_string($conn, $_GET['item_type']);
+                $query .= " AND m.type = '$ftype'";
             }
             if (!empty($_GET['action'])) {
                 $faction = mysqli_real_escape_string($conn, $_GET['action']);
@@ -312,15 +324,26 @@ require_once __DIR__ . '/header.php';
                                         <div class='batch-info'>Batch (ID: {$row['medicine_id']})</div>";
                     }
 
-                    // Expiry date for the batch
+                    // Expiry date or Date Acquired for the batch/item
                     $bexp = $row['expiration_date'];
-                    if ($bexp) {
-                        $today_s = date('Y-m-d');
-                        $bexp_clr = (strtotime($bexp) < strtotime($today_s)) ? '#e74c3c' : '#27ae60';
-                        $bexp_disp = "<span style='color:{$bexp_clr}; font-size:13px;'>"
-                                   . date('M d, Y', strtotime($bexp)) . "</span>";
+                    $acq = $row['date_acquired'];
+                    $type = $row['type'];
+
+                    if ($type == 'dental' || $type == 'medical') {
+                        if (!empty($acq) && $acq != '0000-00-00') {
+                            $bexp_disp = "<span style='color:#1f4f87; font-size:13px;'>" . date('M d, Y', strtotime($acq)) . "</span>";
+                        } else {
+                            $bexp_disp = "<span style='color:#95a5a6;'>N/A</span>";
+                        }
                     } else {
-                        $bexp_disp = "<span style='color:#95a5a6;'>N/A</span>";
+                        if ($bexp && $bexp != '0000-00-00') {
+                            $today_s = date('Y-m-d');
+                            $bexp_clr = (strtotime($bexp) < strtotime($today_s)) ? '#e74c3c' : '#27ae60';
+                            $bexp_disp = "<span style='color:{$bexp_clr}; font-size:13px;'>"
+                                       . date('M d, Y', strtotime($bexp)) . "</span>";
+                        } else {
+                            $bexp_disp = "<span style='color:#95a5a6;'>N/A</span>";
+                        }
                     }
 
                     // Action badge
@@ -331,6 +354,9 @@ require_once __DIR__ . '/header.php';
                     } elseif ($row['action'] === 'New Batch Added') {
                         $badge_class = 'badge-new-batch';
                         $badge_icon  = '📦';
+                    } elseif ($row['action'] === 'Item Updated') {
+                        $badge_class = 'badge-other';
+                        $badge_icon  = '🔄';
                     } else {
                         $badge_class = 'badge-other';
                         $badge_icon  = '📝';
@@ -353,6 +379,7 @@ require_once __DIR__ . '/header.php';
                     }
 
                     echo "<tr>
+                        <td><input type='checkbox' name='log_ids[]' value='{$row['id']}' class='log-checkbox'></td>
                         <td style='color:#aaa; font-size:12px;'>{$row_num}</td>
                         <td>{$med_display}</td>
                         <td>{$bexp_disp}</td>
@@ -363,7 +390,7 @@ require_once __DIR__ . '/header.php';
                     </tr>";
                 }
             } else {
-                echo "<tr><td colspan='7' class='no-data'>
+                echo "<tr><td colspan='8' class='no-data'>
                          <div class='icon'>📭</div>
                          <div>No log records found</div>
                          <small style='margin-top:10px; display:block;'>Try adjusting your filters</small>
@@ -373,9 +400,17 @@ require_once __DIR__ . '/header.php';
             </tbody>
         </table>
     </div>
+    </form>
 </div>
 
 <script>
+    function toggleAll(source) {
+        let checkboxes = document.querySelectorAll('.log-checkbox');
+        for(let i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = source.checked;
+        }
+    }
+
     function exportToCSV() {
         const table = document.getElementById('logTable');
         const csv   = [];
