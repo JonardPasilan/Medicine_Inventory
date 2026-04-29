@@ -21,7 +21,7 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
 
     <style>
         .container {
-            max-width: 1200px;
+            max-width: 95%; /* Expanded from 1200px to take up most of the screen */
             margin: 30px auto;
             padding: 0 20px;
         }

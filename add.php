@@ -11,6 +11,10 @@ $prefill_unit  = isset($_GET['unit'])  ? htmlspecialchars($_GET['unit'],  ENT_QU
 $is_new_batch  = ($prefill_name !== '');
 ?>
 
+    <!-- Flatpickr for Date Formatting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -253,7 +257,7 @@ $is_new_batch  = ($prefill_name !== '');
 
             $errors = [];
             if (empty($n)) $errors[] = "Name is required.";
-            if (empty($l)) $errors[] = "Description is required.";
+            if (empty($l) && ($t == 'medicine' || $t == 'consumable')) $errors[] = "Description is required.";
             if ($q < 0)   $errors[] = "Quantity cannot be negative.";
             
             // Only required for medicines
@@ -313,10 +317,10 @@ $is_new_batch  = ($prefill_name !== '');
             </div>
 
             <div class="form-group">
-                <label>Description <span class="required">*</span></label>
-                <input type="text" name="Description"
+                <label>Description <span class="required" id="descReq" style="<?php echo ($prefill_type == 'medicine' || $prefill_type == 'consumable') ? '' : 'display:none;'; ?>">*</span></label>
+                <input type="text" name="Description" id="descInput"
                        value="<?php echo $prefill_label; ?>"
-                       placeholder="e.g., 500mg tablet, 100pcs/box" required>
+                       placeholder="e.g., 500mg tablet, 100pcs/box" <?php echo ($prefill_type == 'medicine' || $prefill_type == 'consumable') ? 'required' : ''; ?>>
             </div>
 
             <div class="form-group" style="display:flex; gap:15px;">
@@ -481,11 +485,21 @@ $is_new_batch  = ($prefill_name !== '');
         const categoryGroup = document.getElementById('categoryGroup');
         const expGroup = document.getElementById('expGroup');
         const catInput = document.querySelector('input[name="category"]');
+        const descInput = document.getElementById('descInput');
+        const descStar = document.getElementById('descReq');
         
         if (type === 'medicine') {
-            expInput.required = true;
+            if (expInput._flatpickr && expInput._flatpickr.altInput) {
+                expInput.required = false;
+                expInput._flatpickr.altInput.required = true;
+            } else {
+                expInput.required = true;
+            }
             expStar.style.display = 'inline';
         } else {
+            if (expInput._flatpickr && expInput._flatpickr.altInput) {
+                expInput._flatpickr.altInput.required = false;
+            }
             expInput.required = false;
             expStar.style.display = 'none';
         }
@@ -495,16 +509,29 @@ $is_new_batch  = ($prefill_name !== '');
             categoryGroup.style.display = 'none';
             expGroup.style.display = 'none';
             catInput.required = false;
+            descInput.required = false;
+            descStar.style.display = 'none';
         } else {
             eqFields.style.display = 'none';
             categoryGroup.style.display = 'block';
             expGroup.style.display = 'block';
             catInput.required = true;
+            descInput.required = true;
+            descStar.style.display = 'inline';
         }
     }
 
     // Initial check
-    document.addEventListener('DOMContentLoaded', updateRequiredFields);
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr("input[type=date]", {
+            altInput: true,
+            altFormat: "m/d/Y",
+            dateFormat: "Y-m-d",
+            allowInput: true
+        });
+        
+        updateRequiredFields();
+    });
 </script>
 
 </body>

@@ -19,6 +19,10 @@ if (!$r || $r->num_rows === 0) {
 $row = $r->fetch_assoc();
 ?>
 
+    <!-- Flatpickr for Date Formatting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -169,7 +173,7 @@ $row = $r->fetch_assoc();
             </div>
 
             <div class="form-group" style="display:flex; gap:15px;">
-                <div style="flex:1;">
+                <div style="flex:1;" id="categoryGroup">
                     <label>Category <span class="required">*</span></label>
                     <input type="text" name="category" list="categoryList"
                            value="<?php echo htmlspecialchars($row['category'] ?? 'General'); ?>" required>
@@ -184,12 +188,15 @@ $row = $r->fetch_assoc();
                         <option value="Consumable">
                     </datalist>
                 </div>
-                <div style="flex:1;">
+                <div style="flex:1;" id="unitGroup">
                     <label>Unit <span class="required">*</span></label>
                     <input type="text" name="unit" list="unitList"
                            value="<?php echo htmlspecialchars($row['unit'] ?? 'pcs'); ?>" required>
                     <datalist id="unitList">
                         <option value="pcs">
+                        <option value="PCS">
+                        <option value="SET">
+                        <option value="Unit">
                         <option value="box">
                         <option value="ml">
                         <option value="mg">
@@ -201,8 +208,8 @@ $row = $r->fetch_assoc();
             </div>
 
             <div class="form-group">
-                <label>Description <span class="required">*</span></label>
-                <input type="text" name="label" value="<?php echo htmlspecialchars((string)$row['label']); ?>" required>
+                <label>Description <span class="required" id="descReq" style="<?php echo ($row['type'] == 'medicine' || $row['type'] == 'consumable') ? '' : 'display:none;'; ?>">*</span></label>
+                <input type="text" name="label" id="descInput" value="<?php echo htmlspecialchars((string)$row['label']); ?>" <?php echo ($row['type'] == 'medicine' || $row['type'] == 'consumable') ? 'required' : ''; ?>>
             </div>
 
             <div class="form-group">
@@ -210,7 +217,7 @@ $row = $r->fetch_assoc();
                 <input type="number" name="quantity" value="<?php echo (int)$row['quantity']; ?>" min="0" required>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="expGroup">
                 <label>Expiration Date <span class="required" id="expReq" style="<?php echo $row['type'] == 'medicine' ? '' : 'display:none;'; ?>">*</span></label>
                 <input type="date" name="exp" id="expDate" value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>" <?php echo $row['type'] == 'medicine' ? 'required' : ''; ?>>
                 <small style="color:#7f8c8d; display:block; margin-top:5px;">(Optional for consumables)</small>
@@ -235,7 +242,7 @@ $row = $r->fetch_assoc();
                         <input type="text" name="color" value="<?php echo htmlspecialchars((string)($row['color'] ?? '')); ?>">
                     </div>
                     <div style="flex:1;">
-                        <label>Date Acquired</label>
+                        <label>DATE PROCURED</label>
                         <input type="date" name="date_acquired" value="<?php echo htmlspecialchars((string)($row['date_acquired'] ?? '')); ?>">
                     </div>
                 </div>
@@ -284,24 +291,56 @@ $row = $r->fetch_assoc();
         const expInput = document.getElementById('expDate');
         const expStar = document.getElementById('expReq');
         const eqFields = document.getElementById('equipmentFields');
+        const categoryGroup = document.getElementById('categoryGroup');
+        const expGroup = document.getElementById('expGroup');
+        const catInput = document.querySelector('input[name="category"]');
+        const descInput = document.getElementById('descInput');
+        const descStar = document.getElementById('descReq');
         
         if (type === 'medicine') {
-            expInput.required = true;
+            if (expInput._flatpickr && expInput._flatpickr.altInput) {
+                expInput.required = false;
+                expInput._flatpickr.altInput.required = true;
+            } else {
+                expInput.required = true;
+            }
             expStar.style.display = 'inline';
         } else {
+            if (expInput._flatpickr && expInput._flatpickr.altInput) {
+                expInput._flatpickr.altInput.required = false;
+            }
             expInput.required = false;
             expStar.style.display = 'none';
         }
 
         if (type === 'dental' || type === 'medical') {
             eqFields.style.display = 'block';
+            categoryGroup.style.display = 'none';
+            expGroup.style.display = 'none';
+            catInput.required = false;
+            descInput.required = false;
+            descStar.style.display = 'none';
         } else {
             eqFields.style.display = 'none';
+            categoryGroup.style.display = 'block';
+            expGroup.style.display = 'block';
+            catInput.required = true;
+            descInput.required = true;
+            descStar.style.display = 'inline';
         }
     }
 
     // Initial check
-    document.addEventListener('DOMContentLoaded', updateRequiredFields);
+    document.addEventListener('DOMContentLoaded', () => {
+        flatpickr("input[type=date]", {
+            altInput: true,
+            altFormat: "m/d/Y",
+            dateFormat: "Y-m-d",
+            allowInput: true
+        });
+        
+        updateRequiredFields();
+    });
 </script>
 
 </body>
