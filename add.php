@@ -320,7 +320,7 @@ $is_new_batch  = ($prefill_name !== '');
             </div>
 
             <div class="form-group" style="display:flex; gap:15px;">
-                <div style="flex:1;">
+                <div style="flex:1;" id="categoryGroup">
                     <label>Category <span class="required">*</span></label>
                     <input type="text" name="category" list="categoryList"
                            value="<?php echo $prefill_cat; ?>"
@@ -336,13 +336,16 @@ $is_new_batch  = ($prefill_name !== '');
                         <option value="Consumable">
                     </datalist>
                 </div>
-                <div style="flex:1;">
+                <div style="flex:1;" id="unitGroup">
                     <label>Unit <span class="required">*</span></label>
                     <input type="text" name="unit" list="unitList"
                            value="<?php echo $prefill_unit; ?>"
                            placeholder="e.g., pcs, box, ml" required <?php echo $is_new_batch ? 'readonly' : ''; ?>>
                     <datalist id="unitList">
                         <option value="pcs">
+                        <option value="PCS">
+                        <option value="SET">
+                        <option value="Unit">
                         <option value="box">
                         <option value="ml">
                         <option value="mg">
@@ -359,7 +362,7 @@ $is_new_batch  = ($prefill_name !== '');
                        placeholder="Enter number of units" required>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" id="expGroup">
                 <label>Expiration Date <span class="required" id="expReq" style="<?php echo $prefill_type == 'medicine' ? '' : 'display:none;'; ?>">*</span></label>
                 <input type="date" name="exp" id="expDate" <?php echo $prefill_type == 'medicine' ? 'required' : ''; ?>>
                 <small style="color:#7f8c8d; display:block; margin-top:5px;">
@@ -386,7 +389,7 @@ $is_new_batch  = ($prefill_name !== '');
                         <input type="text" name="color" placeholder="e.g., Blue, Orange">
                     </div>
                     <div style="flex:1;">
-                        <label>Date Acquired</label>
+                        <label>DATE PROCURED</label>
                         <input type="date" name="date_acquired">
                     </div>
                 </div>
@@ -406,7 +409,7 @@ $is_new_batch  = ($prefill_name !== '');
                 </div>
                 <div class="form-group">
                     <label>Remarks / Notes</label>
-                    <textarea name="remarks" rows="2" placeholder="e.g., Donated by LGU year 2021"></textarea>
+                    <textarea name="remarks" rows="2" placeholder=""></textarea>
                 </div>
             </div>
 
@@ -475,6 +478,9 @@ $is_new_batch  = ($prefill_name !== '');
         const expInput = document.getElementById('expDate');
         const expStar = document.getElementById('expReq');
         const eqFields = document.getElementById('equipmentFields');
+        const categoryGroup = document.getElementById('categoryGroup');
+        const expGroup = document.getElementById('expGroup');
+        const catInput = document.querySelector('input[name="category"]');
         
         if (type === 'medicine') {
             expInput.required = true;
@@ -486,8 +492,14 @@ $is_new_batch  = ($prefill_name !== '');
 
         if (type === 'dental' || type === 'medical') {
             eqFields.style.display = 'block';
+            categoryGroup.style.display = 'none';
+            expGroup.style.display = 'none';
+            catInput.required = false;
         } else {
             eqFields.style.display = 'none';
+            categoryGroup.style.display = 'block';
+            expGroup.style.display = 'block';
+            catInput.required = true;
         }
     }
 

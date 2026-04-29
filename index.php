@@ -330,7 +330,7 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
     <!-- Tabs -->
     <div class="tabs-container">
         <button class="tab-btn active" onclick="switchTab('medicine')"><i data-lucide="pill" style="width:16px;height:16px;"></i> Medicines</button>
-        <button class="tab-btn" onclick="switchTab('consumable')"><i data-lucide="droplet" style="width:16px;height:16px;"></i> Consumables</button>
+        <button class="tab-btn" onclick="switchTab('consumable')"><i data-lucide="droplet" style="width:16px;height:16px;"></i> Consumable Supplies</button>
         <button class="tab-btn" onclick="switchTab('dental')"><i data-lucide="activity" style="width:16px;height:16px;"></i> Dental Device & Equipment</button>
         <button class="tab-btn" onclick="switchTab('medical')"><i data-lucide="stethoscope" style="width:16px;height:16px;"></i> Medical Device & Equipment</button>
     </div>
