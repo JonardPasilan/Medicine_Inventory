@@ -244,6 +244,7 @@ $row = $r->fetch_assoc();
                     <div style="flex:1;">
                         <label>DATE PROCURED</label>
                         <input type="date" name="date_acquired" value="<?php echo htmlspecialchars((string)($row['date_acquired'] ?? '')); ?>">
+                        <small style="color:#7f8c8d; display:block; margin-top:5px;">(Leave blank for N/A)</small>
                     </div>
                 </div>
                 <div class="form-group" style="display:flex; gap:10px;">

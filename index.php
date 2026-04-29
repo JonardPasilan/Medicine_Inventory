@@ -454,7 +454,7 @@ function renderEquipmentTable($conn, $type, $search) {
             $brand = htmlspecialchars((string)$row['brand_serial']);
             $ris = htmlspecialchars((string)$row['ris_id']);
             $color = htmlspecialchars((string)$row['color']);
-            $acq = $row['date_acquired'] ? date('m/d/Y', strtotime($row['date_acquired'])) : 'N/A';
+            $acq = (!empty($row['date_acquired']) && $row['date_acquired'] != '0000-00-00') ? date('m/d/Y', strtotime($row['date_acquired'])) : 'N/A';
             $srv = (int)$row['qty_serviceable'];
             $unsrv = (int)$row['qty_unserviceable'];
             $rep = (int)$row['qty_repair'];

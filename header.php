@@ -142,6 +142,13 @@
         document.addEventListener("DOMContentLoaded", () => {
             lucide.createIcons();
         });
+
+        // Prevent scrolling from accidentally changing number inputs globally
+        document.addEventListener('wheel', function(event) {
+            if (document.activeElement.type === 'number') {
+                document.activeElement.blur();
+            }
+        });
     </script>
 </head>
 <body>
