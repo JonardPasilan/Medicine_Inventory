@@ -2,8 +2,9 @@
 require_once __DIR__ . '/header.php';
 require_once __DIR__ . '/db.php';
 
-// Handle search query
+// Handle search and filter queries
 $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
+$filter = isset($_GET['filter']) ? $_GET['filter'] : '';
 
 // Fetch Alerts Data
 $today_date = date('Y-m-d');
@@ -60,6 +61,12 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         .alert-card.warning { border-left: 4px solid hsl(40, 90%, 50%); }
         .alert-card.danger { border-left: 4px solid hsl(0, 80%, 50%); }
         .alert-card.info { border-left: 4px solid hsl(210, 90%, 50%); }
+        
+        .alert-card.active-filter {
+            background: var(--color-brand-light);
+            border-color: var(--color-brand);
+            box-shadow: inset 0 0 0 1px var(--color-brand);
+        }
         
         .alert-icon { font-size: 30px; color: var(--color-text-muted); }
         .alert-card.warning .alert-icon { color: hsl(40, 90%, 50%); }
@@ -260,12 +267,15 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
 
     <!-- Alerts Dashboard -->
     <div class="alerts-dashboard">
-        <div class="alert-card warning">
+        <div class="alert-card warning <?php echo $filter === 'low' ? 'active-filter' : ''; ?>" style="cursor: pointer;" onclick="window.location.href='<?php echo $filter === 'low' ? 'index.php' : 'index.php?filter=low'; ?>'">
             <div class="alert-icon"><i data-lucide="trending-down"></i></div>
             <div class="alert-details">
                 <h3><?php echo $low_stock_count; ?></h3>
                 <p>Low Stock Items (≤ 5)</p>
             </div>
+            <?php if ($filter === 'low'): ?>
+                <i data-lucide="x-circle" style="position: absolute; right: 10px; top: 10px; width: 16px; height: 16px; color: var(--color-text-muted);"></i>
+            <?php endif; ?>
         </div>
         <div class="alert-card danger" style="position: relative; cursor: pointer;" onclick="window.location.href='expired.php'">
             <div class="alert-icon"><i data-lucide="alert-triangle"></i></div>
@@ -279,12 +289,15 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             </button>
             <?php endif; ?>
         </div>
-        <div class="alert-card info">
+        <div class="alert-card info <?php echo $filter === 'soon' ? 'active-filter' : ''; ?>" style="cursor: pointer;" onclick="window.location.href='<?php echo $filter === 'soon' ? 'index.php' : 'index.php?filter=soon'; ?>'">
             <div class="alert-icon"><i data-lucide="calendar"></i></div>
             <div class="alert-details">
                 <h3><?php echo $expiring_soon_count; ?></h3>
                 <p>Expiring Soon (30 Days)</p>
             </div>
+            <?php if ($filter === 'soon'): ?>
+                <i data-lucide="x-circle" style="position: absolute; right: 10px; top: 10px; width: 16px; height: 16px; color: var(--color-text-muted);"></i>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -294,12 +307,24 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             <div style="position: relative; flex: 1;">
                 <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--color-text-muted);"></i>
                 <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name or description..." style="padding-left: 36px; width: 100%;">
+                <?php if ($filter): ?>
+                    <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filter); ?>">
+                <?php endif; ?>
             </div>
             <button type="submit">Search</button>
-            <?php if ($search): ?>
-                <a href="index.php" class="btn btn-edit">Clear</a>
+            <?php if ($search || $filter): ?>
+                <a href="index.php" class="btn btn-edit">Clear All</a>
             <?php endif; ?>
         </form>
+        <?php if ($filter === 'low'): ?>
+            <div style="margin-top: 10px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                <i data-lucide="filter" style="width:12px; height:12px;"></i> Showing Low Stock Items Only (Total Qty ≤ 5)
+            </div>
+        <?php elseif ($filter === 'soon'): ?>
+            <div style="margin-top: 10px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                <i data-lucide="filter" style="width:12px; height:12px;"></i> Showing Items Expiring Soon (Within 30 Days)
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- Tabs -->
@@ -325,7 +350,7 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
                 </tr>
             </thead>
             <tbody>
-                <?php renderInventoryTable($conn, 'medicine', $search); ?>
+                <?php renderInventoryTable($conn, 'medicine', $search, $filter); ?>
             </tbody>
         </table>
     </div>
@@ -345,7 +370,7 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
                 </tr>
             </thead>
             <tbody>
-                <?php renderInventoryTable($conn, 'consumable', $search); ?>
+                <?php renderInventoryTable($conn, 'consumable', $search, $filter); ?>
             </tbody>
         </table>
     </div>
@@ -466,13 +491,22 @@ function renderEquipmentTable($conn, $type, $search) {
 /**
  * Helper to render the grouped inventory table rows
  */
-function renderInventoryTable($conn, $type, $search) {
+function renderInventoryTable($conn, $type, $search, $filter = '') {
     $today = date("Y-m-d");
     $soon  = date("Y-m-d", strtotime('+30 days'));
 
     $where = "WHERE type = '$type' AND is_archived = 0";
     if ($search) {
         $where .= " AND (name LIKE '%$search%' OR label LIKE '%$search%')";
+    }
+
+    $having = "";
+    if ($filter === 'low') {
+        $having = "HAVING total_qty <= 5";
+    } elseif ($filter === 'soon') {
+        // For 'soon' filter, we want to filter groups where the EARLIEST expiry is within 30 days
+        // and NOT already expired (to distinguish from the 'danger' category which is usually archived)
+        $having = "HAVING earliest_exp >= '$today' AND earliest_exp <= '$soon'";
     }
 
     $groups = $conn->query("
@@ -483,6 +517,7 @@ function renderInventoryTable($conn, $type, $search) {
         FROM medicines
         $where
         GROUP BY name, label
+        $having
         ORDER BY name ASC");
 
     if ($groups && $groups->num_rows > 0) {
