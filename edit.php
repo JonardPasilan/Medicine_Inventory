@@ -17,6 +17,12 @@ if (!$r || $r->num_rows === 0) {
 }
 
 $row = $r->fetch_assoc();
+
+// Redirect equipment types to their dedicated form
+if (in_array($row['type'], ['dental', 'medical'])) {
+    header("Location: edit_equipment.php?id=$id");
+    exit();
+}
 ?>
 
     <!-- Flatpickr for Date Formatting -->
@@ -160,10 +166,8 @@ $row = $r->fetch_assoc();
             <div class="form-group">
                 <label>Item Type <span class="required">*</span></label>
                 <select name="type" id="typeSelect" required onchange="updateRequiredFields()">
-                    <option value="medicine" <?php echo $row['type'] == 'medicine' ? 'selected' : ''; ?>>💊 Medicine</option>
+                    <option value="medicine"   <?php echo $row['type'] == 'medicine'   ? 'selected' : ''; ?>>💊 Medicine</option>
                     <option value="consumable" <?php echo $row['type'] == 'consumable' ? 'selected' : ''; ?>>🧴 Consumable</option>
-                    <option value="dental" <?php echo $row['type'] == 'dental' ? 'selected' : ''; ?>>🦷 Dental Device & Equipment</option>
-                    <option value="medical" <?php echo $row['type'] == 'medical' ? 'selected' : ''; ?>>🩺 Medical Device & Equipment</option>
                 </select>
             </div>
 
@@ -214,57 +218,13 @@ $row = $r->fetch_assoc();
 
             <div class="form-group">
                 <label>Quantity <span class="required">*</span></label>
-                <input type="number" name="quantity" value="<?php echo (int)$row['quantity']; ?>" min="0" required>
+                <input type="number" name="quantity" id="quantityInput" value="<?php echo (int)$row['quantity']; ?>" min="0" required>
             </div>
 
             <div class="form-group" id="expGroup">
                 <label>Expiration Date <span class="required" id="expReq" style="<?php echo $row['type'] == 'medicine' ? '' : 'display:none;'; ?>">*</span></label>
                 <input type="date" name="exp" id="expDate" value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>" <?php echo $row['type'] == 'medicine' ? 'required' : ''; ?>>
                 <small style="color:#7f8c8d; display:block; margin-top:5px;">(Optional for consumables)</small>
-            </div>
-
-            <!-- Equipment Specific Fields -->
-            <div id="equipmentFields" style="display:none; background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <h4 style="margin-bottom: 15px; color: #2c3e50;">Equipment Details</h4>
-                <div class="form-group" style="display:flex; gap:15px;">
-                    <div style="flex:1;">
-                        <label>Brand/Serial #</label>
-                        <input type="text" name="brand_serial" value="<?php echo htmlspecialchars((string)($row['brand_serial'] ?? '')); ?>">
-                    </div>
-                    <div style="flex:1;">
-                        <label>RIS # / ICS # / PAR #</label>
-                        <input type="text" name="ris_id" value="<?php echo htmlspecialchars((string)($row['ris_id'] ?? '')); ?>">
-                    </div>
-                </div>
-                <div class="form-group" style="display:flex; gap:15px;">
-                    <div style="flex:1;">
-                        <label>Color</label>
-                        <input type="text" name="color" value="<?php echo htmlspecialchars((string)($row['color'] ?? '')); ?>">
-                    </div>
-                    <div style="flex:1;">
-                        <label>DATE PROCURED</label>
-                        <input type="date" name="date_acquired" value="<?php echo htmlspecialchars((string)($row['date_acquired'] ?? '')); ?>">
-                        <small style="color:#7f8c8d; display:block; margin-top:5px;">(Leave blank for N/A)</small>
-                    </div>
-                </div>
-                <div class="form-group" style="display:flex; gap:10px;">
-                    <div style="flex:1;">
-                        <label>Serviceable</label>
-                        <input type="number" name="qty_serviceable" min="0" value="<?php echo (int)($row['qty_serviceable'] ?? 0); ?>">
-                    </div>
-                    <div style="flex:1;">
-                        <label>Unserviceable</label>
-                        <input type="number" name="qty_unserviceable" min="0" value="<?php echo (int)($row['qty_unserviceable'] ?? 0); ?>">
-                    </div>
-                    <div style="flex:1;">
-                        <label>For Repair</label>
-                        <input type="number" name="qty_repair" min="0" value="<?php echo (int)($row['qty_repair'] ?? 0); ?>">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Remarks / Notes</label>
-                    <textarea name="remarks" rows="2" style="width:100%; padding:10px; border:2px solid #e0e0e0; border-radius:8px; font-family:inherit;"><?php echo htmlspecialchars((string)($row['remarks'] ?? '')); ?></textarea>
-                </div>
             </div>
 
             <div class="button-group">
@@ -288,16 +248,13 @@ $row = $r->fetch_assoc();
     form.addEventListener('submit', () => { formChanged = false; });
 
     function updateRequiredFields() {
-        const type = document.getElementById('typeSelect').value;
+        const type     = document.getElementById('typeSelect').value;
         const expInput = document.getElementById('expDate');
-        const expStar = document.getElementById('expReq');
-        const eqFields = document.getElementById('equipmentFields');
-        const categoryGroup = document.getElementById('categoryGroup');
-        const expGroup = document.getElementById('expGroup');
+        const expStar  = document.getElementById('expReq');
         const catInput = document.querySelector('input[name="category"]');
         const descInput = document.getElementById('descInput');
-        const descStar = document.getElementById('descReq');
-        
+        const descStar  = document.getElementById('descReq');
+
         if (type === 'medicine') {
             if (expInput._flatpickr && expInput._flatpickr.altInput) {
                 expInput.required = false;
@@ -314,21 +271,9 @@ $row = $r->fetch_assoc();
             expStar.style.display = 'none';
         }
 
-        if (type === 'dental' || type === 'medical') {
-            eqFields.style.display = 'block';
-            categoryGroup.style.display = 'none';
-            expGroup.style.display = 'none';
-            catInput.required = false;
-            descInput.required = false;
-            descStar.style.display = 'none';
-        } else {
-            eqFields.style.display = 'none';
-            categoryGroup.style.display = 'block';
-            expGroup.style.display = 'block';
-            catInput.required = true;
-            descInput.required = true;
-            descStar.style.display = 'inline';
-        }
+        descInput.required = true;
+        descStar.style.display = 'inline';
+        catInput.required = true;
     }
 
     // Initial check
@@ -339,7 +284,6 @@ $row = $r->fetch_assoc();
             dateFormat: "Y-m-d",
             allowInput: true
         });
-        
         updateRequiredFields();
     });
 </script>

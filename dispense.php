@@ -80,6 +80,8 @@ $meds_query = $conn->query("
                  THEN expiration_date ELSE NULL END)                          AS next_exp
     FROM medicines
     WHERE quantity > 0
+      AND is_archived = 0
+      AND type IN ('medicine', 'consumable')
     GROUP BY name, label
     ORDER BY name ASC");
 ?>

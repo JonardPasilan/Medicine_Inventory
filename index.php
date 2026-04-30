@@ -9,13 +9,13 @@ $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['searc
 $today_date = date('Y-m-d');
 $soon_date  = date('Y-m-d', strtotime('+30 days'));
 
-$low_stock_q = $conn->query("SELECT COUNT(*) as c FROM (SELECT name, label, SUM(quantity) as tq FROM medicines WHERE is_archived = 0 GROUP BY name, label HAVING tq <= 5) as sub");
+$low_stock_q = $conn->query("SELECT COUNT(*) as c FROM (SELECT name, label, SUM(quantity) as tq FROM medicines WHERE is_archived = 0 AND type IN ('medicine', 'consumable') GROUP BY name, label HAVING tq <= 5) as sub");
 $low_stock_count = $low_stock_q ? $low_stock_q->fetch_assoc()['c'] : 0;
 
-$expired_q = $conn->query("SELECT COUNT(*) as c FROM medicines WHERE is_archived = 1 AND expiration_date < '$today_date'");
+$expired_q = $conn->query("SELECT COUNT(*) as c FROM medicines WHERE is_archived = 1 AND type IN ('medicine', 'consumable') AND expiration_date < '$today_date'");
 $expired_count = $expired_q ? $expired_q->fetch_assoc()['c'] : 0;
 
-$expiring_soon_q = $conn->query("SELECT COUNT(*) as c FROM medicines WHERE is_archived = 0 AND expiration_date >= '$today_date' AND expiration_date <= '$soon_date'");
+$expiring_soon_q = $conn->query("SELECT COUNT(*) as c FROM medicines WHERE is_archived = 0 AND type IN ('medicine', 'consumable') AND expiration_date >= '$today_date' AND expiration_date <= '$soon_date'");
 $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] : 0;
 ?>
 
@@ -474,7 +474,7 @@ function renderEquipmentTable($conn, $type, $search) {
                     <td>$rem</td>
                     <td>
                         <div style='display:flex; gap:8px;'>
-                            <a href='edit.php?id=$id' class='btn btn-edit'><i data-lucide='edit-2' style='width:14px;height:14px;'></i> Edit</a>
+                            <a href='edit_equipment.php?id=$id' class='btn btn-edit'><i data-lucide='edit-2' style='width:14px;height:14px;'></i> Edit</a>
                             <button class='btn btn-delete' onclick='deleteBatch(event, $id)'><i data-lucide='trash-2' style='width:14px;height:14px;'></i> Delete</button>
                         </div>
                     </td>

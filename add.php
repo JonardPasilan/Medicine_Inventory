@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/header.php';
 
@@ -9,218 +9,129 @@ $prefill_type  = isset($_GET['type'])  ? htmlspecialchars($_GET['type'],  ENT_QU
 $prefill_cat   = isset($_GET['cat'])   ? htmlspecialchars($_GET['cat'],   ENT_QUOTES, 'UTF-8') : 'General';
 $prefill_unit  = isset($_GET['unit'])  ? htmlspecialchars($_GET['unit'],  ENT_QUOTES, 'UTF-8') : 'pcs';
 $is_new_batch  = ($prefill_name !== '');
+
+// Redirect equipment types to the dedicated form
+if (in_array($prefill_type, ['dental', 'medical'])) {
+    header("Location: add_equipment.php");
+    exit();
+}
 ?>
 
-    <!-- Flatpickr for Date Formatting -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- Flatpickr for Date Formatting -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; min-height: 100vh; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6f9;
-            min-height: 100vh;
-        }
+    .container { max-width: 600px; margin: 40px auto; padding: 0 20px; }
 
+    .form-card {
+        background: white; border-radius: 15px; padding: 35px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        animation: fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(30px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-        .container {
-            max-width: 600px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
+    .form-header { text-align: center; margin-bottom: 30px; }
+    .form-header h2 { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
+    .form-header p  { color: #7f8c8d; font-size: 14px; }
+    .form-header .icon { font-size: 50px; margin-bottom: 10px; transition: transform 0.5s ease; display: block; }
+    .form-card:hover .icon { transform: rotate(15deg) scale(1.1); }
 
-        .form-card {
-            background: white;
-            border-radius: 15px;
-            padding: 35px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            animation: fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
+    .batch-banner {
+        background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        border-left: 4px solid #27ae60; border-radius: 8px;
+        padding: 14px 18px; margin-bottom: 25px;
+        display: flex; align-items: center; gap: 10px;
+        font-size: 14px; color: #1e8449;
+        animation: slideInLeft 0.5s ease forwards;
+    }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px) scale(0.98); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 500; font-size: 14px; }
+    label .required { color: #e74c3c; margin-left: 3px; }
 
-        .form-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .form-header h2 { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
-        .form-header p  { color: #7f8c8d; font-size: 14px; }
-        .form-header .icon { font-size: 50px; margin-bottom: 10px; transition: transform 0.5s ease; }
-        .form-card:hover .icon { transform: rotate(15deg) scale(1.1); }
+    input, select, textarea {
+        width: 100%; padding: 12px 15px;
+        border: 2px solid #e0e0e0; border-radius: 8px;
+        font-size: 14px; font-family: inherit; transition: all 0.3s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+        outline: none; border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52,152,219,0.1); transform: translateY(-1px);
+    }
 
-        /* "Adding new batch for" banner */
-        .batch-banner {
-            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-            border-left: 4px solid #27ae60;
-            border-radius: 8px;
-            padding: 14px 18px;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            color: #1e8449;
-            animation: slideInLeft 0.5s ease forwards;
-        }
-        @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
+    .btn-submit {
+        width: 100%; padding: 14px; background: #1f4f87;
+        border: none; color: white; font-size: 16px; font-weight: 600;
+        border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
+        margin-top: 10px; position: relative; overflow: hidden;
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(31,79,135,0.4); }
+    .btn-submit:active { transform: translateY(0); }
 
-        .form-group { margin-bottom: 20px; }
+    .ripple {
+        position: absolute; background: rgba(255,255,255,0.4); border-radius: 50%;
+        transform: scale(0); animation: ripple-animation 0.6s linear; pointer-events: none;
+    }
+    @keyframes ripple-animation { to { transform: scale(4); opacity: 0; } }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #2c3e50;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        label .required { color: #e74c3c; margin-left: 3px; }
+    #loadingOverlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(255,255,255,0.7); z-index: 10000;
+        align-items: center; justify-content: center;
+        flex-direction: column; gap: 15px; backdrop-filter: blur(2px);
+    }
+    .spinner {
+        width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db;
+        border-radius: 50%; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        input, select, textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
-            transform: translateY(-1px);
-        }
+    #toastContainer { position: fixed; bottom: 30px; right: 30px; z-index: 10001; }
+    .toast {
+        background: white; padding: 15px 25px; border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        display: flex; align-items: center; gap: 12px; margin-top: 10px;
+        transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        border-left: 5px solid #27ae60;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast.error { border-left-color: #e74c3c; }
+    .toast-icon { font-size: 20px; }
 
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: #1f4f87;
-            border: none;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(31,79,135,0.4);
-        }
-        .btn-submit:active { transform: translateY(0); }
+    .info-box {
+        background: #f8f9fa; border-radius: 8px; padding: 15px;
+        margin-top: 20px; text-align: center; border: 1px solid #e0e0e0;
+    }
+    .info-box p { color: #7f8c8d; font-size: 13px; }
+    .info-box a { color: #3498db; text-decoration: none; font-weight: 500; }
+    .info-box a:hover { text-decoration: underline; }
 
-        /* Ripple Effect */
-        .ripple {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
-            transform: scale(0);
-            animation: ripple-animation 0.6s linear;
-            pointer-events: none;
-        }
-        @keyframes ripple-animation {
-            to { transform: scale(4); opacity: 0; }
-        }
-
-        /* Loading Spinner */
-        #loadingOverlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(255,255,255,0.7);
-            z-index: 10000;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 15px;
-            backdrop-filter: blur(2px);
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Toast Notification */
-        #toastContainer {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 10001;
-        }
-        .toast {
-            background: white;
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-top: 10px;
-            transform: translateX(120%);
-            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            border-left: 5px solid #27ae60;
-        }
-        .toast.show { transform: translateX(0); }
-        .toast.error { border-left-color: #e74c3c; }
-        .toast-icon { font-size: 20px; }
-
-        .info-box {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: center;
-            border: 1px solid #e0e0e0;
-        }
-        .info-box p { color: #7f8c8d; font-size: 13px; }
-        .info-box a { color: #3498db; text-decoration: none; font-weight: 500; }
-        .info-box a:hover { text-decoration: underline; }
-
-        @media (max-width: 768px) {
-            .container { margin: 20px auto; }
-            .form-card { padding: 25px; }
-            .form-header h2 { font-size: 24px; }
-        }
-    </style>
-</head>
-<body>
+    @media (max-width: 768px) {
+        .container { margin: 20px auto; }
+        .form-card { padding: 25px; }
+        .form-header h2 { font-size: 24px; }
+    }
+</style>
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
     <p style="color: #1f4f87; font-weight: 600;">Saving item...</p>
 </div>
-
 <div id="toastContainer"></div>
 
 <div class="container">
     <div class="form-card">
         <div class="form-header">
-            <div class="icon"><?php 
-                if ($prefill_type == 'medicine') echo '💊';
-                elseif ($prefill_type == 'consumable') echo '🧴';
-                elseif ($prefill_type == 'dental') echo '🦷';
-                else echo '🩺'; 
-            ?></div>
-            <h2><?php echo $is_new_batch ? 'Add New Batch' : 'Add New Item'; ?></h2>
+            <span class="icon"><?php echo $prefill_type == 'consumable' ? '🧴' : '💊'; ?></span>
+            <h2><?php echo $is_new_batch ? 'Add New Batch' : 'Add Medicine / Consumable'; ?></h2>
             <p><?php echo $is_new_batch
-                ? 'Creating a new batch entry for this ' . $prefill_type
-                : 'Enter the details of the ' . $prefill_type . ' to add to inventory'; ?></p>
+                ? 'Adding a new batch for: <strong>' . $prefill_name . '</strong>'
+                : 'Enter the details of the medicine or consumable supply.'; ?></p>
         </div>
 
         <?php if ($is_new_batch): ?>
@@ -228,107 +139,94 @@ $is_new_batch  = ($prefill_name !== '');
             <span>📦</span>
             <div>
                 <strong>New Batch For: <?php echo $prefill_name; ?></strong><br>
-                <small>A separate batch record will be created with its own quantity and expiration date.</small>
+                <small>A new batch record will be created with its own quantity and expiration date.</small>
             </div>
         </div>
         <?php endif; ?>
 
         <?php
-        $status_msg = '';
+        $status_msg  = '';
         $status_type = 'success';
         if (isset($_POST['add'])) {
-            $n = mysqli_real_escape_string($conn, trim($_POST['name']       ?? ''));
+            $n = mysqli_real_escape_string($conn, trim($_POST['name']        ?? ''));
             $l = mysqli_real_escape_string($conn, trim($_POST['Description'] ?? ''));
             $t = mysqli_real_escape_string($conn, trim($_POST['type']        ?? 'medicine'));
             $c = mysqli_real_escape_string($conn, trim($_POST['category']    ?? 'General'));
             $u = mysqli_real_escape_string($conn, trim($_POST['unit']        ?? 'pcs'));
             $q = intval($_POST['quantity'] ?? 0);
-            $e = mysqli_real_escape_string($conn, trim($_POST['exp']        ?? ''));
-            
-            // Equipment fields
-            $brand = mysqli_real_escape_string($conn, trim($_POST['brand_serial'] ?? ''));
-            $ris = mysqli_real_escape_string($conn, trim($_POST['ris_id'] ?? ''));
-            $color = mysqli_real_escape_string($conn, trim($_POST['color'] ?? ''));
-            $date_acq = mysqli_real_escape_string($conn, trim($_POST['date_acquired'] ?? ''));
-            $qsrv = intval($_POST['qty_serviceable'] ?? 0);
-            $qunsrv = intval($_POST['qty_unserviceable'] ?? 0);
-            $qrep = intval($_POST['qty_repair'] ?? 0);
-            $rem = mysqli_real_escape_string($conn, trim($_POST['remarks'] ?? ''));
+            $e = mysqli_real_escape_string($conn, trim($_POST['exp']         ?? ''));
 
             $errors = [];
             if (empty($n)) $errors[] = "Name is required.";
-            if (empty($l) && ($t == 'medicine' || $t == 'consumable')) $errors[] = "Description is required.";
+            if (empty($l)) $errors[] = "Description is required.";
             if ($q < 0)   $errors[] = "Quantity cannot be negative.";
-            
-            // Only required for medicines
-            if ($t === 'medicine' && empty($e)) {
-                $errors[] = "Expiration date is required for medicines.";
-            }
+            if ($t === 'medicine' && empty($e)) $errors[] = "Expiration date is required for medicines.";
 
             if (empty($errors)) {
-                $bn_res = $conn->query("SELECT MAX(batch_number) AS max_bn FROM medicines WHERE name = '$n' AND label = '$l' AND type = '$t'");
+                $bn_res  = $conn->query("SELECT MAX(batch_number) AS max_bn FROM medicines WHERE name = '$n' AND label = '$l' AND type = '$t'");
                 $next_bn = 1;
                 if ($bn_res && $row = $bn_res->fetch_assoc()) {
                     $next_bn = intval($row['max_bn']) + 1;
                 }
 
                 $val_exp = !empty($e) ? "'$e'" : "NULL";
-                $val_acq = !empty($date_acq) ? "'$date_acq'" : "NULL";
-                
-                $sql = "INSERT INTO medicines (name, label, type, category, unit, batch_number, quantity, expiration_date, brand_serial, ris_id, color, date_acquired, qty_serviceable, qty_unserviceable, qty_repair, remarks)
-                        VALUES ('$n', '$l', '$t', '$c', '$u', $next_bn, '$q', $val_exp, '$brand', '$ris', '$color', $val_acq, $qsrv, $qunsrv, $qrep, '$rem')";
+                $sql = "INSERT INTO medicines (name, label, type, category, unit, batch_number, quantity, expiration_date, is_archived)
+                        VALUES ('$n', '$l', '$t', '$c', '$u', $next_bn, $q, $val_exp, 0)";
 
                 if ($conn->query($sql)) {
                     $new_id = $conn->insert_id;
-                    $conn->query("INSERT INTO logs (medicine_id, quantity, action)
-                                  VALUES ($new_id, $q, 'New Batch Added')");
-                    $status_msg = ($is_new_batch ? "New batch added for $n" : "$n added") . "! Qty: $q units.";
+                    $conn->query("INSERT INTO logs (medicine_id, quantity, action) VALUES ($new_id, $q, 'New Batch Added')");
+                    $status_msg  = ($is_new_batch ? "New batch added for $n" : "$n added") . "! Qty: $q units.";
                     $status_type = 'success';
                 } else {
-                    $status_msg = "Error: " . $conn->error;
+                    $status_msg  = "Error: " . $conn->error;
                     $status_type = 'error';
                 }
             } else {
-                $status_msg = implode(" ", $errors);
+                $status_msg  = implode(" ", $errors);
                 $status_type = 'error';
             }
         }
         ?>
 
         <form method="POST" id="addForm" onsubmit="handleSubmit(event)">
+
+            <!-- Item Type: Medicine or Consumable only -->
             <div class="form-group">
                 <label>Item Type <span class="required">*</span></label>
-                <select name="type" id="typeSelect" required <?php echo $is_new_batch ? 'disabled' : ''; ?> onchange="updateRequiredFields()">
-                    <option value="medicine" <?php echo $prefill_type == 'medicine' ? 'selected' : ''; ?>>💊 Medicine</option>
-                    <option value="consumable" <?php echo $prefill_type == 'consumable' ? 'selected' : ''; ?>>🧴 Consumable</option>
-                    <option value="dental" <?php echo $prefill_type == 'dental' ? 'selected' : ''; ?>>🦷 Dental Device & Equipment</option>
-                    <option value="medical" <?php echo $prefill_type == 'medical' ? 'selected' : ''; ?>>🩺 Medical Device & Equipment</option>
+                <select name="type" id="typeSelect" required <?php echo $is_new_batch ? 'disabled' : ''; ?> onchange="toggleExpiry()">
+                    <option value="medicine"   <?php echo $prefill_type == 'medicine'   ? 'selected' : ''; ?>>💊 Medicine</option>
+                    <option value="consumable" <?php echo $prefill_type == 'consumable' ? 'selected' : ''; ?>>🧴 Consumable Supply</option>
                 </select>
-                <?php if($is_new_batch): ?>
+                <?php if ($is_new_batch): ?>
                     <input type="hidden" name="type" value="<?php echo $prefill_type; ?>">
                 <?php endif; ?>
             </div>
 
+            <!-- Item Name -->
             <div class="form-group">
                 <label>Item Name <span class="required">*</span></label>
-                <input type="text" name="name"
-                       value="<?php echo $prefill_name; ?>"
-                       placeholder="e.g., Paracetamol, Gauze, Alcohol" required>
+                <input type="text" name="name" value="<?php echo $prefill_name; ?>"
+                       placeholder="e.g., Paracetamol, Gauze Pad" required
+                       <?php echo $is_new_batch ? 'readonly' : ''; ?>>
             </div>
 
+            <!-- Description -->
             <div class="form-group">
-                <label>Description <span class="required" id="descReq" style="<?php echo ($prefill_type == 'medicine' || $prefill_type == 'consumable') ? '' : 'display:none;'; ?>">*</span></label>
+                <label>Description <span class="required">*</span></label>
                 <input type="text" name="Description" id="descInput"
                        value="<?php echo $prefill_label; ?>"
-                       placeholder="e.g., 500mg tablet, 100pcs/box" <?php echo ($prefill_type == 'medicine' || $prefill_type == 'consumable') ? 'required' : ''; ?>>
+                       placeholder="e.g., 500mg tablet, 100pcs/box" required>
             </div>
 
+            <!-- Category & Unit -->
             <div class="form-group" style="display:flex; gap:15px;">
-                <div style="flex:1;" id="categoryGroup">
+                <div style="flex:1;">
                     <label>Category <span class="required">*</span></label>
                     <input type="text" name="category" list="categoryList"
                            value="<?php echo $prefill_cat; ?>"
-                           placeholder="e.g., Tablet, Syrup, Injectable" required <?php echo $is_new_batch ? 'readonly' : ''; ?>>
+                           placeholder="e.g., Tablet, Syrup" required
+                           <?php echo $is_new_batch ? 'readonly' : ''; ?>>
                     <datalist id="categoryList">
                         <option value="Tablet">
                         <option value="Syrup">
@@ -340,11 +238,12 @@ $is_new_batch  = ($prefill_name !== '');
                         <option value="Consumable">
                     </datalist>
                 </div>
-                <div style="flex:1;" id="unitGroup">
+                <div style="flex:1;">
                     <label>Unit <span class="required">*</span></label>
                     <input type="text" name="unit" list="unitList"
                            value="<?php echo $prefill_unit; ?>"
-                           placeholder="e.g., pcs, box, ml" required <?php echo $is_new_batch ? 'readonly' : ''; ?>>
+                           placeholder="e.g., pcs, box" required
+                           <?php echo $is_new_batch ? 'readonly' : ''; ?>>
                     <datalist id="unitList">
                         <option value="pcs">
                         <option value="PCS">
@@ -360,62 +259,19 @@ $is_new_batch  = ($prefill_name !== '');
                 </div>
             </div>
 
+            <!-- Quantity -->
             <div class="form-group">
                 <label>Quantity <span class="required">*</span></label>
-                <input type="number" name="quantity" min="0"
-                       placeholder="Enter number of units" required>
+                <input type="number" name="quantity" min="0" placeholder="Enter number of units" required>
             </div>
 
+            <!-- Expiration Date -->
             <div class="form-group" id="expGroup">
-                <label>Expiration Date <span class="required" id="expReq" style="<?php echo $prefill_type == 'medicine' ? '' : 'display:none;'; ?>">*</span></label>
+                <label>Expiration Date
+                    <span class="required" id="expReq" style="<?php echo $prefill_type == 'medicine' ? '' : 'display:none;'; ?>">*</span>
+                </label>
                 <input type="date" name="exp" id="expDate" <?php echo $prefill_type == 'medicine' ? 'required' : ''; ?>>
-                <small style="color:#7f8c8d; display:block; margin-top:5px;">
-                    Set the expiration date for this batch. (Optional for consumables)
-                </small>
-            </div>
-
-            <!-- Equipment Specific Fields -->
-            <div id="equipmentFields" style="display:none; background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <h4 style="margin-bottom: 15px; color: #2c3e50;">Equipment Details</h4>
-                <div class="form-group" style="display:flex; gap:15px;">
-                    <div style="flex:1;">
-                        <label>Brand/Serial #</label>
-                        <input type="text" name="brand_serial" placeholder="e.g., SN-12345">
-                    </div>
-                    <div style="flex:1;">
-                        <label>RIS # / ICS # / PAR #</label>
-                        <input type="text" name="ris_id" placeholder="e.g., RIS No. 21-6-136">
-                    </div>
-                </div>
-                <div class="form-group" style="display:flex; gap:15px;">
-                    <div style="flex:1;">
-                        <label>Color</label>
-                        <input type="text" name="color" placeholder="e.g., Blue, Orange">
-                    </div>
-                    <div style="flex:1;">
-                        <label>DATE PROCURED</label>
-                        <input type="date" name="date_acquired">
-                        <small style="color:#7f8c8d; display:block; margin-top:5px;">(Leave blank for N/A)</small>
-                    </div>
-                </div>
-                <div class="form-group" style="display:flex; gap:10px;">
-                    <div style="flex:1;">
-                        <label>Serviceable</label>
-                        <input type="number" name="qty_serviceable" min="0" value="0">
-                    </div>
-                    <div style="flex:1;">
-                        <label>Unserviceable</label>
-                        <input type="number" name="qty_unserviceable" min="0" value="0">
-                    </div>
-                    <div style="flex:1;">
-                        <label>For Repair</label>
-                        <input type="number" name="qty_repair" min="0" value="0">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Remarks / Notes</label>
-                    <textarea name="remarks" rows="2" placeholder=""></textarea>
-                </div>
+                <small style="color:#7f8c8d; display:block; margin-top:5px;">(Optional for consumables)</small>
             </div>
 
             <button type="submit" name="add" class="btn-submit">
@@ -424,7 +280,7 @@ $is_new_batch  = ($prefill_name !== '');
         </form>
 
         <div class="info-box">
-            <p>📊 <a href="index.php">← Back to Inventory</a></p>
+            <p>📊 <a href="index.php">← Back to Inventory</a> &nbsp;|&nbsp; <a href="add_equipment.php">🦷 Add Device & Equipment →</a></p>
         </div>
     </div>
 </div>
@@ -438,13 +294,13 @@ $is_new_batch  = ($prefill_name !== '');
             let ripples = document.createElement('span');
             ripples.className = 'ripple';
             ripples.style.left = x + 'px';
-            ripples.style.top = y + 'px';
+            ripples.style.top  = y + 'px';
             this.appendChild(ripples);
-            setTimeout(() => { ripples.remove() }, 600);
+            setTimeout(() => ripples.remove(), 600);
         });
     });
 
-    function showLoading() {
+    function handleSubmit(e) {
         document.getElementById('loadingOverlay').style.display = 'flex';
     }
 
@@ -452,86 +308,55 @@ $is_new_batch  = ($prefill_name !== '');
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
         toast.className = `toast ${type === 'error' ? 'error' : ''}`;
-        toast.innerHTML = `
-            <span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span>
-            <span>${message}</span>
-        `;
+        toast.innerHTML = `<span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span><span>${message}</span>`;
         container.appendChild(toast);
-        setTimeout(() => { toast.classList.add('show'); }, 100);
+        setTimeout(() => toast.classList.add('show'), 100);
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => { toast.remove(); }, 400);
+            setTimeout(() => toast.remove(), 400);
         }, 5000);
     }
 
-    function handleSubmit(e) {
-        showLoading();
+    function toggleExpiry() {
+        const type    = document.getElementById('typeSelect').value;
+        const expInput = document.getElementById('expDate');
+        const expStar  = document.getElementById('expReq');
+
+        if (type === 'medicine') {
+            expStar.style.display = 'inline';
+            if (expInput._flatpickr && expInput._flatpickr.altInput) {
+                expInput._flatpickr.altInput.required = true;
+                expInput.required = false;
+            } else {
+                expInput.required = true;
+            }
+        } else {
+            expStar.style.display = 'none';
+            if (expInput._flatpickr && expInput._flatpickr.altInput) {
+                expInput._flatpickr.altInput.required = false;
+            }
+            expInput.required = false;
+        }
     }
 
     // PHP passed status
     <?php if ($status_msg): ?>
         window.onload = function() {
+            document.getElementById('loadingOverlay').style.display = 'none';
             showToast("<?php echo addslashes($status_msg); ?>", "<?php echo $status_type; ?>");
             <?php if ($status_type === 'success'): ?>
-                setTimeout(() => { document.getElementById('addForm').reset(); updateRequiredFields(); }, 500);
+                setTimeout(() => { document.getElementById('addForm').reset(); toggleExpiry(); }, 500);
             <?php endif; ?>
         };
     <?php endif; ?>
 
-    function updateRequiredFields() {
-        const type = document.getElementById('typeSelect').value;
-        const expInput = document.getElementById('expDate');
-        const expStar = document.getElementById('expReq');
-        const eqFields = document.getElementById('equipmentFields');
-        const categoryGroup = document.getElementById('categoryGroup');
-        const expGroup = document.getElementById('expGroup');
-        const catInput = document.querySelector('input[name="category"]');
-        const descInput = document.getElementById('descInput');
-        const descStar = document.getElementById('descReq');
-        
-        if (type === 'medicine') {
-            if (expInput._flatpickr && expInput._flatpickr.altInput) {
-                expInput.required = false;
-                expInput._flatpickr.altInput.required = true;
-            } else {
-                expInput.required = true;
-            }
-            expStar.style.display = 'inline';
-        } else {
-            if (expInput._flatpickr && expInput._flatpickr.altInput) {
-                expInput._flatpickr.altInput.required = false;
-            }
-            expInput.required = false;
-            expStar.style.display = 'none';
-        }
-
-        if (type === 'dental' || type === 'medical') {
-            eqFields.style.display = 'block';
-            categoryGroup.style.display = 'none';
-            expGroup.style.display = 'none';
-            catInput.required = false;
-            descInput.required = false;
-            descStar.style.display = 'none';
-        } else {
-            eqFields.style.display = 'none';
-            categoryGroup.style.display = 'block';
-            expGroup.style.display = 'block';
-            catInput.required = true;
-            descInput.required = true;
-            descStar.style.display = 'inline';
-        }
-    }
-
-    // Initial check
+    // Initial check on page load
     document.addEventListener('DOMContentLoaded', () => {
         flatpickr("input[type=date]", {
-            altInput: true,
-            altFormat: "m/d/Y",
-            dateFormat: "Y-m-d",
-            allowInput: true
+            altInput: true, altFormat: "m/d/Y",
+            dateFormat: "Y-m-d", allowInput: true
         });
-        
-        updateRequiredFields();
+        toggleExpiry();
     });
 </script>
 

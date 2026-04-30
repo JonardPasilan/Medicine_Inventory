@@ -88,7 +88,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS `borrower_slip_items` (
   CONSTRAINT `fk_slip` FOREIGN KEY (`slip_id`) REFERENCES `borrowers_slips`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// Auto-Archive of Expired/Empty Stocks
-$conn->query("UPDATE medicines SET is_archived = 1 WHERE quantity <= 0 OR (expiration_date IS NOT NULL AND expiration_date < CURDATE())");
+// Auto-Archive ONLY for medicines/consumables (NOT equipment)
+$conn->query("UPDATE medicines SET is_archived = 1 WHERE type IN ('medicine', 'consumable') AND (quantity <= 0 OR (expiration_date IS NOT NULL AND expiration_date < CURDATE()))");
+// Safety: ensure equipment is NEVER archived
+$conn->query("UPDATE medicines SET is_archived = 0 WHERE type IN ('dental', 'medical')");
 
 ?>

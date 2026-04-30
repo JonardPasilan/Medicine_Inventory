@@ -42,6 +42,20 @@ if (isset($_POST['save_slip'])) {
         $status_type = 'error';
     }
 }
+
+// Fetch available equipment from inventory for dropdown
+$equipment_list = $conn->query("
+    SELECT id, name, brand_serial, qty_serviceable
+    FROM medicines
+    WHERE type IN ('dental', 'medical') AND is_archived = 0
+    ORDER BY name ASC
+");
+$equipment_options = [];
+if ($equipment_list) {
+    while ($eq = $equipment_list->fetch_assoc()) {
+        $equipment_options[] = $eq;
+    }
+}
 ?>
 
 <style>
@@ -208,7 +222,18 @@ if (isset($_POST['save_slip'])) {
                         <tr>
                             <td><input type="text" name="items[0][item_no]"></td>
                             <td><input type="number" name="items[0][quantity]" value="1" min="1"></td>
-                            <td><input type="text" name="items[0][description]" required></td>
+                        <td>
+                            <select name="items[0][description]" required style="width:100%; padding:6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--text-sm);">
+                                <option value="">-- Select Equipment --</option>
+                                <?php foreach ($equipment_options as $eq): ?>
+                                    <option value="<?php echo htmlspecialchars($eq['name']); ?>">
+                                        <?php echo htmlspecialchars($eq['name']); ?>
+                                        <?php if (!empty($eq['brand_serial'])): ?> (<?php echo htmlspecialchars($eq['brand_serial']); ?>)<?php endif; ?>
+                                        — <?php echo (int)$eq['qty_serviceable']; ?> available
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
                             <td><input type="datetime-local" name="items[0][released]"></td>
                             <td><input type="datetime-local" name="items[0][returned]"></td>
                             <td><textarea name="items[0][remarks]" rows="1"></textarea></td>
@@ -234,6 +259,25 @@ if (isset($_POST['save_slip'])) {
 </div>
 
 <script>
+    // Equipment options from PHP for use in dynamically added rows
+    const equipmentOptions = <?php
+        $opts = [['value' => '', 'label' => '-- Select Equipment --']];
+        foreach ($equipment_options as $eq) {
+            $label = htmlspecialchars($eq['name'], ENT_QUOTES);
+            if (!empty($eq['brand_serial'])) $label .= ' (' . htmlspecialchars($eq['brand_serial'], ENT_QUOTES) . ')';
+            $label .= ' — ' . (int)$eq['qty_serviceable'] . ' available';
+            $opts[] = ['value' => htmlspecialchars($eq['name'], ENT_QUOTES), 'label' => $label];
+        }
+        echo json_encode($opts);
+    ?>;
+
+    function buildEquipmentDropdown(name) {
+        let opts = equipmentOptions.map(o =>
+            `<option value="${o.value}">${o.label}</option>`
+        ).join('');
+        return `<select name="${name}" required style="width:100%; padding:6px; border:1px solid #ddd; border-radius:4px; font-size:13px;">${opts}</select>`;
+    }
+
     let rowCount = 1;
     function addRow() {
         const table = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
@@ -242,7 +286,7 @@ if (isset($_POST['save_slip'])) {
         newRow.innerHTML = `
             <td><input type="text" name="items[${rowCount}][item_no]"></td>
             <td><input type="number" name="items[${rowCount}][quantity]" value="1" min="1"></td>
-            <td><input type="text" name="items[${rowCount}][description]" required></td>
+            <td>${buildEquipmentDropdown(`items[${rowCount}][description]`)}</td>
             <td><input type="datetime-local" name="items[${rowCount}][released]"></td>
             <td><input type="datetime-local" name="items[${rowCount}][returned]"></td>
             <td><textarea name="items[${rowCount}][remarks]" rows="1"></textarea></td>

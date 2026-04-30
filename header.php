@@ -162,7 +162,8 @@
     $current_page = basename($_SERVER['PHP_SELF']); 
     ?>
     <a href="index.php" class="<?php echo $current_page == 'index.php' ? 'active' : ''; ?>"><i data-lucide="layout-dashboard" style="width: 16px; height: 16px;"></i> Dashboard</a>
-    <a href="add.php" class="<?php echo $current_page == 'add.php' ? 'active' : ''; ?>"><i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i> Add</a>
+    <a href="add.php" class="<?php echo $current_page == 'add.php' ? 'active' : ''; ?>"><i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i> Add Medicine</a>
+    <a href="add_equipment.php" class="<?php echo $current_page == 'add_equipment.php' ? 'active' : ''; ?>"><i data-lucide="stethoscope" style="width: 16px; height: 16px;"></i> Add Equipment</a>
     <a href="import.php" class="<?php echo $current_page == 'import.php' ? 'active' : ''; ?>"><i data-lucide="download" style="width: 16px; height: 16px;"></i> Import</a>
     <a href="dispense.php" class="<?php echo $current_page == 'dispense.php' ? 'active' : ''; ?>"><i data-lucide="pill" style="width: 16px; height: 16px;"></i> Dispense</a>
     <a href="borrowers_slip.php" class="<?php echo $current_page == 'borrowers_slip.php' ? 'active' : ''; ?>"><i data-lucide="shopping-cart" style="width: 16px; height: 16px;"></i> Borrower's Slip</a>

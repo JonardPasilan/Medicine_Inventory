@@ -8,6 +8,34 @@ if (!isset($_GET['id'])) {
 }
 
 $id = intval($_GET['id']);
+
+// Handle item return
+if (isset($_POST['return_item_id'])) {
+    $item_id = intval($_POST['return_item_id']);
+    $now = date('Y-m-d H:i:s');
+    
+    // Get item info
+    $item_q = $conn->query("SELECT * FROM borrower_slip_items WHERE id = $item_id");
+    if ($item_q && $item_q->num_rows > 0) {
+        $item_data = $item_q->fetch_assoc();
+        $qty = $item_data['quantity'];
+        $desc = mysqli_real_escape_string($conn, $item_data['item_description']);
+        
+        // Update item returned date
+        $conn->query("UPDATE borrower_slip_items SET date_returned = '$now' WHERE id = $item_id");
+        
+        // Find equipment by name/description to restore quantity
+        $conn->query("UPDATE medicines SET 
+                      qty_serviceable = qty_serviceable + $qty, 
+                      quantity = quantity + $qty 
+                      WHERE name = '$desc' AND type IN ('dental', 'medical') 
+                      LIMIT 1");
+                      
+        header("Location: view_borrower_slip.php?id=$id&returned=1");
+        exit();
+    }
+}
+
 $res = $conn->query("SELECT * FROM borrowers_slips WHERE id = $id");
 if (!$res || $res->num_rows == 0) {
     header("Location: borrowers_slip.php");
@@ -216,12 +244,19 @@ $items_res = $conn->query("SELECT * FROM borrower_slip_items WHERE slip_id = $id
                 while ($item = $items_res->fetch_assoc()) {
                     $released = $item['date_released'] ? date('m/d/Y H:i', strtotime($item['date_released'])) : '-';
                     $returned = $item['date_returned'] ? date('m/d/Y H:i', strtotime($item['date_returned'])) : '-';
+                    $btn_html = "";
+                    if (!$item['date_returned']) {
+                        $btn_html = "<form method='POST' style='display:inline;' onsubmit='return confirm(\"Mark this item as returned?\")'>
+                                        <input type='hidden' name='return_item_id' value='{$item['id']}'>
+                                        <button type='submit' class='btn-return' style='padding:2px 6px; font-size:10px; cursor:pointer; background:#27ae60; color:white; border:none; border-radius:3px;'>Return</button>
+                                     </form>";
+                    }
                     echo "<tr>
                         <td>" . htmlspecialchars($item['item_no'] ?: $i) . "</td>
                         <td>{$item['quantity']}</td>
                         <td>" . htmlspecialchars($item['item_description']) . "</td>
                         <td>$released</td>
-                        <td>$returned</td>
+                        <td>$returned $btn_html</td>
                         <td>" . htmlspecialchars($item['remarks_purpose']) . "</td>
                     </tr>";
                     $i++;

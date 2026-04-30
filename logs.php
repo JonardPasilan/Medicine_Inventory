@@ -316,12 +316,14 @@ require_once __DIR__ . '/header.php';
                     if ($row['name']) {
                         $mname  = htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8');
                         $mlabel = htmlspecialchars((string)$row['label'], ENT_QUOTES, 'UTF-8');
+                        $type = $row['type'];
+                        $batch_label = ($type == 'dental' || $type == 'medical') ? "Equipment" : "Batch #{$row['batch_number']}";
                         $med_display = "<div class='medicine-name'>{$mname}</div>
-                                        <small style='color:#7f8c8d;'>{$mlabel}</small>
-                                        <div class='batch-info'>Batch #{$row['batch_number']} (ID: {$row['medicine_id']})</div>";
+                                         <small style='color:#7f8c8d;'>{$mlabel}</small>
+                                         <div class='batch-info'>{$batch_label} (ID: {$row['medicine_id']})</div>";
                     } else {
                         $med_display = "<div class='medicine-name' style='color:#95a5a6;'>Deleted Medicine</div>
-                                        <div class='batch-info'>Batch (ID: {$row['medicine_id']})</div>";
+                                         <div class='batch-info'>Item (ID: {$row['medicine_id']})</div>";
                     }
 
                     // Expiry date or Date Acquired for the batch/item
