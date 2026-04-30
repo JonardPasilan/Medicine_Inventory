@@ -137,17 +137,169 @@
                 padding: 6px 10px;
             }
         }
+
+        /* CUSTOM MODAL STYLES */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+        
+        .modal-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(20px);
+            transition: transform var(--transition-base);
+            text-align: center;
+        }
+        .modal-overlay.show .modal-card { transform: translateY(0); }
+        
+        .modal-header {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .modal-header i {
+            color: var(--color-brand);
+            width: 48px;
+            height: 48px;
+        }
+        .modal-header h3 {
+            font-size: var(--text-lg);
+            color: var(--color-text-primary);
+            font-weight: 700;
+        }
+        
+        .modal-body {
+            margin-bottom: 24px;
+            color: var(--color-text-secondary);
+            font-size: var(--text-base);
+            line-height: 1.5;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: var(--text-sm);
+            cursor: pointer;
+            border: none;
+            flex: 1;
+        }
+        .modal-btn-confirm {
+            background: var(--color-brand);
+            color: white;
+        }
+        .modal-btn-confirm:hover { background: var(--color-brand-dark); }
+        
+        .modal-btn-cancel {
+            background: var(--color-overlay);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+        .modal-btn-cancel:hover { background: var(--color-border); color: var(--color-text-primary); }
+
+        .modal-btn-alert {
+            background: var(--color-brand);
+            color: white;
+            max-width: 120px;
+        }
     </style>
     <script>
+        // Custom Modal Logic
+        let modalResolve = null;
+
+        function showConfirm(title, message) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('customModal');
+                const titleEl = document.getElementById('modalTitle');
+                const messageEl = document.getElementById('modalMessage');
+                const cancelBtn = document.getElementById('modalCancel');
+                const confirmBtn = document.getElementById('modalConfirm');
+                const iconEl = document.getElementById('modalIcon');
+
+                titleEl.innerText = title || "Confirm Action";
+                messageEl.innerText = message || "Are you sure you want to proceed?";
+                cancelBtn.style.display = "block";
+                confirmBtn.className = "modal-btn modal-btn-confirm";
+                confirmBtn.innerText = "Confirm";
+                iconEl.setAttribute('data-lucide', 'help-circle');
+                iconEl.style.color = 'var(--color-brand)';
+                lucide.createIcons();
+
+                modal.classList.add('show');
+                modalResolve = resolve;
+            });
+        }
+
+        function showAlert(title, message, type = 'info') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('customModal');
+                const titleEl = document.getElementById('modalTitle');
+                const messageEl = document.getElementById('modalMessage');
+                const cancelBtn = document.getElementById('modalCancel');
+                const confirmBtn = document.getElementById('modalConfirm');
+                const iconEl = document.getElementById('modalIcon');
+
+                titleEl.innerText = title || "Notification";
+                messageEl.innerText = message;
+                cancelBtn.style.display = "none";
+                confirmBtn.className = "modal-btn modal-btn-alert";
+                confirmBtn.innerText = "OK";
+                
+                if(type === 'error') {
+                    iconEl.setAttribute('data-lucide', 'x-circle');
+                    iconEl.style.color = '#e53935';
+                } else if(type === 'success') {
+                    iconEl.setAttribute('data-lucide', 'check-circle');
+                    iconEl.style.color = '#2e7d32';
+                } else {
+                    iconEl.setAttribute('data-lucide', 'info');
+                    iconEl.style.color = 'var(--color-brand)';
+                }
+                lucide.createIcons();
+
+                modal.classList.add('show');
+                modalResolve = resolve;
+            });
+        }
+
+        function closeModal(result) {
+            const modal = document.getElementById('customModal');
+            modal.classList.remove('show');
+            if (modalResolve) {
+                modalResolve(result);
+                modalResolve = null;
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             lucide.createIcons();
-        });
-
-        // Prevent scrolling from accidentally changing number inputs globally
-        document.addEventListener('wheel', function(event) {
-            if (document.activeElement.type === 'number') {
-                document.activeElement.blur();
-            }
+            
+            // Modal button events
+            document.getElementById('modalCancel').addEventListener('click', () => closeModal(false));
+            document.getElementById('modalConfirm').addEventListener('click', () => closeModal(true));
         });
     </script>
 </head>
@@ -168,4 +320,21 @@
     <a href="dispense.php" class="<?php echo $current_page == 'dispense.php' ? 'active' : ''; ?>"><i data-lucide="pill" style="width: 16px; height: 16px;"></i> Dispense</a>
     <a href="borrowers_slip.php" class="<?php echo $current_page == 'borrowers_slip.php' ? 'active' : ''; ?>"><i data-lucide="shopping-cart" style="width: 16px; height: 16px;"></i> Borrower's Slip</a>
     <a href="logs.php" class="<?php echo $current_page == 'logs.php' ? 'active' : ''; ?>"><i data-lucide="clipboard-list" style="width: 16px; height: 16px;"></i> Logs</a>
+</div>
+
+<!-- Custom Modal HTML -->
+<div id="customModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <i id="modalIcon" data-lucide="help-circle"></i>
+            <h3 id="modalTitle">Confirm Action</h3>
+        </div>
+        <div class="modal-body">
+            <p id="modalMessage">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+            <button id="modalCancel" class="modal-btn modal-btn-cancel">Cancel</button>
+            <button id="modalConfirm" class="modal-btn modal-btn-confirm">Confirm</button>
+        </div>
+    </div>
 </div>

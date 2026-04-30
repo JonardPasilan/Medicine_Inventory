@@ -237,33 +237,8 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         .no-data { text-align: center; padding: 40px; color: var(--color-text-muted); font-size: var(--text-sm); }
 
         /* Custom Delete Modal */
-        #deleteModal {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.4); z-index: 10000;
-            align-items: center; justify-content: center;
-            backdrop-filter: blur(2px); opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        #deleteModal.show { opacity: 1; }
-        .modal-content {
-            background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 30px;
-            width: 90%; max-width: 400px; text-align: center;
-            box-shadow: var(--shadow-lg);
-            transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        #deleteModal.show .modal-content { transform: scale(1); }
-        .modal-icon { font-size: 40px; color: hsl(0, 70%, 50%); margin-bottom: 15px; display: inline-block; }
-        .modal-title { font-size: var(--text-lg); color: var(--color-text-primary); margin-bottom: 8px; font-weight: 600; }
-        .modal-text { color: var(--color-text-secondary); font-size: var(--text-sm); margin-bottom: 25px; line-height: 1.5; }
-        .modal-actions { display: flex; gap: 15px; justify-content: center; }
-        .btn-modal {
-            padding: 10px 20px; border: 1px solid transparent; border-radius: var(--radius-sm);
-            font-size: var(--text-sm); font-weight: 500; cursor: pointer;
-        }
-        .btn-modal-cancel { background: var(--color-surface); color: var(--color-text-secondary); border-color: var(--color-border); }
-        .btn-modal-cancel:hover { background: var(--color-overlay); color: var(--color-text-primary); border-color: var(--color-border-strong); }
-        .btn-modal-confirm { background: hsl(0, 70%, 50%); color: white; border-color: hsl(0, 70%, 40%); }
-        .btn-modal-confirm:hover { background: hsl(0, 70%, 45%); box-shadow: var(--shadow-sm); }
+
+
 
         @media (max-width: 768px) {
             th, td { padding: 10px; font-size: var(--text-xs); }
@@ -584,18 +559,7 @@ function renderInventoryTable($conn, $type, $search) {
 }
 ?>
 
-<!-- Custom Delete Confirmation Modal -->
-<div id="deleteModal">
-    <div class="modal-content">
-        <div class="modal-icon"><i data-lucide="alert-circle" style="width: 48px; height: 48px; stroke-width: 1.5;"></i></div>
-        <h3 class="modal-title">Delete Batch?</h3>
-        <p class="modal-text">Are you sure you want to permanently delete this batch? This action cannot be undone.</p>
-        <div class="modal-actions">
-            <button class="btn-modal btn-modal-cancel" onclick="closeDeleteModal()">Cancel</button>
-            <button class="btn-modal btn-modal-confirm" id="confirmDeleteBtn">Yes, Delete</button>
-        </div>
-    </div>
-</div>
+
 
 <script>
     function switchTab(type) {
@@ -650,32 +614,15 @@ function renderInventoryTable($conn, $type, $search) {
         document.getElementById('loadingOverlay').style.display = 'flex';
     }
 
-    let deleteTargetId = null;
-
-    function deleteBatch(event, id) {
+    async function deleteBatch(event, id) {
         if (event) {
             event.preventDefault();
             event.stopPropagation();
         }
-        deleteTargetId = id;
-        const modal = document.getElementById('deleteModal');
-        modal.style.display = 'flex';
-        // Small delay to allow display:flex to apply before adding opacity class
-        setTimeout(() => modal.classList.add('show'), 10);
-    }
-
-    function closeDeleteModal() {
-        const modal = document.getElementById('deleteModal');
-        modal.classList.remove('show');
-        setTimeout(() => { modal.style.display = 'none'; deleteTargetId = null; }, 300);
-    }
-
-    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-        if (deleteTargetId) {
-            closeDeleteModal();
+        
+        const confirmed = await showConfirm("Delete Batch?", "Are you sure you want to permanently delete this batch? This action cannot be undone.");
+        if (confirmed) {
             showLoading();
-            
-            // Create a hidden form to submit via POST
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'delete.php';
@@ -683,7 +630,7 @@ function renderInventoryTable($conn, $type, $search) {
             const idInput = document.createElement('input');
             idInput.type = 'hidden';
             idInput.name = 'id';
-            idInput.value = deleteTargetId;
+            idInput.value = id;
             
             const deleteInput = document.createElement('input');
             deleteInput.type = 'hidden';
@@ -693,13 +640,13 @@ function renderInventoryTable($conn, $type, $search) {
             form.appendChild(idInput);
             form.appendChild(deleteInput);
             document.body.appendChild(form);
-            
             form.submit();
         }
-    });
+    }
 
-    function clearExpiredBatches() {
-        if (confirm("Are you sure you want to PERMANENTLY DELETE all expired batches from the database? This cannot be undone.")) {
+    async function clearExpiredBatches() {
+        const confirmed = await showConfirm("Confirm Action", "Are you sure you want to PERMANENTLY DELETE all expired batches from the database? This cannot be undone.");
+        if (confirmed) {
             showLoading();
             const form = document.createElement('form');
             form.method = 'POST';

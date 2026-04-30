@@ -27,7 +27,8 @@ if (isset($_POST['use'])) {
             FROM medicines
             WHERE name = '$med_name'
               AND expiration_date >= CURDATE()
-              AND quantity > 0");
+              AND quantity > 0
+              AND type IN ('medicine', 'consumable')");
         $avail = (int)($chk ? $chk->fetch_assoc()['avail'] : 0);
 
         if ($avail < $qty_needed) {
@@ -40,6 +41,7 @@ if (isset($_POST['use'])) {
                 WHERE name = '$med_name'
                   AND expiration_date >= CURDATE()
                   AND quantity > 0
+                  AND type IN ('medicine', 'consumable')
                 ORDER BY expiration_date ASC");
 
             $remaining = $qty_needed;
@@ -374,19 +376,6 @@ $meds_query = $conn->query("
 
     function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
 
-    function showToast(message, type = 'success') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `toast ${type === 'error' ? 'error' : ''}`;
-        toast.innerHTML = `<span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span><span>${message}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 100);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 400);
-        }, 5000);
-    }
-
     function handleSubmit() { showLoading(); }
 
     const today = new Date().toISOString().split('T')[0];
@@ -455,7 +444,10 @@ $meds_query = $conn->query("
     }
 
     <?php if ($alert): ?>
-        window.onload = () => showToast("<?php echo addslashes($alert); ?>", "<?php echo $alert_type; ?>");
+        window.onload = () => {
+            const title = "<?php echo ($alert_type === 'error' ? 'Dispense Failed' : 'Dispense Successful'); ?>";
+            showAlert(title, "<?php echo addslashes($alert); ?>", "<?php echo $alert_type; ?>");
+        };
     <?php endif; ?>
 </script>
 

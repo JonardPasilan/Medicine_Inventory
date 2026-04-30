@@ -129,9 +129,9 @@ $today_date = date('Y-m-d');
                                 <td>$qty</td>
                                 <td style='color:#c0392b; font-weight:bold;'>$exp</td>
                                 <td>
-                                    <form method='POST' action='delete_expired.php' style='display:inline;' onsubmit='return confirm(\"Permanently delete this specific batch?\");'>
+                                    <form method='POST' action='delete_expired.php' style='display:inline;' class='delete-single-form'>
                                         <input type='hidden' name='single_id' value='$id'>
-                                        <button type='submit' style='background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px;' title='Delete Item'>🗑️</button>
+                                        <button type='button' class='delete-btn' style='background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px;' title='Delete Item'>🗑️</button>
                                     </form>
                                 </td>
                               </tr>";
@@ -149,8 +149,9 @@ $today_date = date('Y-m-d');
 </div>
 
 <script>
-    function clearExpiredBatches() {
-        if (confirm("Are you sure you want to PERMANENTLY DELETE all expired batches from the database? This cannot be undone.")) {
+    async function clearExpiredBatches() {
+        const confirmed = await showConfirm("Delete All Expired?", "Are you sure you want to PERMANENTLY DELETE all expired batches from the database? This cannot be undone.");
+        if (confirmed) {
             document.getElementById('loadingOverlay').style.display = 'flex';
             const form = document.createElement('form');
             form.method = 'POST';
@@ -166,6 +167,15 @@ $today_date = date('Y-m-d');
             form.submit();
         }
     }
+
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const confirmed = await showConfirm("Confirm Action", "Permanently delete this specific batch?");
+            if (confirmed) {
+                this.closest('form').submit();
+            }
+        });
+    });
 </script>
 
 </body>

@@ -246,9 +246,9 @@ $items_res = $conn->query("SELECT * FROM borrower_slip_items WHERE slip_id = $id
                     $returned = $item['date_returned'] ? date('m/d/Y H:i', strtotime($item['date_returned'])) : '-';
                     $btn_html = "";
                     if (!$item['date_returned']) {
-                        $btn_html = "<form method='POST' style='display:inline;' onsubmit='return confirm(\"Mark this item as returned?\")'>
+                        $btn_html = "<form method='POST' style='display:inline;' class='return-form'>
                                         <input type='hidden' name='return_item_id' value='{$item['id']}'>
-                                        <button type='submit' class='btn-return' style='padding:2px 6px; font-size:10px; cursor:pointer; background:#27ae60; color:white; border:none; border-radius:3px;'>Return</button>
+                                        <button type='button' class='btn-return return-btn' style='padding:2px 6px; font-size:10px; cursor:pointer; background:#27ae60; color:white; border:none; border-radius:3px;'>Return</button>
                                      </form>";
                     }
                     echo "<tr>
@@ -282,6 +282,15 @@ $items_res = $conn->query("SELECT * FROM borrower_slip_items WHERE slip_id = $id
 
 <script>
     lucide.createIcons();
+
+    document.querySelectorAll('.return-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const confirmed = await showConfirm("Return Item?", "Are you sure you want to mark this item as returned? This will restore the quantity to inventory.");
+            if (confirmed) {
+                this.closest('form').submit();
+            }
+        });
+    });
 </script>
 </body>
 </html>

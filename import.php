@@ -260,25 +260,11 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
         dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
     });
 
-    function showToast(message, type = 'success') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        let icon = '✅';
-        if(type === 'error') icon = '❌';
-        if(type === 'warning') icon = '⚠️';
-        
-        toast.className = `toast ${type}`;
-        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 100);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 400);
-        }, 5000);
-    }
-
     <?php if ($message): ?>
-        window.onload = () => showToast("<?php echo addslashes($message); ?>", "<?php echo $msg_type; ?>");
+        window.onload = () => {
+            const title = "<?php echo ($msg_type === 'error' ? 'Import Failed' : ($msg_type === 'warning' ? 'Import Warning' : 'Import Successful')); ?>";
+            showAlert(title, "<?php echo addslashes($message); ?>", "<?php echo $msg_type; ?>");
+        };
     <?php endif; ?>
 </script>
 

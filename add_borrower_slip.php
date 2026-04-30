@@ -302,7 +302,7 @@ if ($equipment_list) {
         if (document.getElementById('itemsTable').rows.length > 2) {
             row.parentNode.removeChild(row);
         } else {
-            alert("At least one item is required.");
+            showAlert("Required", "At least one item is required in the borrower's slip.", "error");
         }
     }
 

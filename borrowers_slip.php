@@ -137,9 +137,9 @@ if (isset($_POST['delete_id'])) {
                             <td>" . $row['item_count'] . " item(s)</td>
                             <td class='actions'>
                                 <a href='view_borrower_slip.php?id={$row['id']}' class='btn-icon' title='View & Print'><i data-lucide='eye' style='width: 16px; height: 16px;'></i></a>
-                                <form method='POST' style='display:inline;' onsubmit='return confirm(\"Are you sure you want to delete this slip?\")'>
+                                <form method='POST' style='display:inline;' class='delete-form'>
                                     <input type='hidden' name='delete_id' value='{$row['id']}'>
-                                    <button type='submit' class='btn-icon' style='color: #e53935;' title='Delete'><i data-lucide='trash-2' style='width: 16px; height: 16px;'></i></button>
+                                    <button type='button' class='btn-icon delete-btn' style='color: #e53935;' title='Delete'><i data-lucide='trash-2' style='width: 16px; height: 16px;'></i></button>
                                 </form>
                             </td>
                         </tr>";
@@ -155,6 +155,15 @@ if (isset($_POST['delete_id'])) {
 
 <script>
     lucide.createIcons();
+
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const confirmed = await showConfirm("Delete Slip?", "Are you sure you want to delete this borrower's slip? This action cannot be undone.");
+            if (confirmed) {
+                this.closest('form').submit();
+            }
+        });
+    });
 </script>
 </body>
 </html>

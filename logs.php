@@ -246,7 +246,7 @@ require_once __DIR__ . '/header.php';
 
     <form method="POST" id="logsForm">
         <div class="export-section" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <button type="submit" name="delete_logs" class="btn-delete" onclick="return confirm('Are you sure you want to delete selected logs?');" style="background:#e74c3c; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:500;">🗑️ Delete Selected</button>
+            <button type="submit" name="delete_logs" class="btn-delete" style="background:#e74c3c; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:500;">🗑️ Delete Selected</button>
             <button type="button" onclick="exportToCSV()" class="btn-export">📊 Export to CSV</button>
         </div>
 
@@ -412,6 +412,22 @@ require_once __DIR__ . '/header.php';
             checkboxes[i].checked = source.checked;
         }
     }
+
+    document.getElementById('logsForm').addEventListener('submit', async function(e) {
+        // Only intercept if the delete button was clicked
+        if (e.submitter && e.submitter.name === 'delete_logs') {
+            e.preventDefault();
+            const confirmed = await showConfirm("Confirm Delete", "Are you sure you want to delete the selected log records?");
+            if (confirmed) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'delete_logs';
+                hiddenInput.value = '1';
+                this.appendChild(hiddenInput);
+                this.submit();
+            }
+        }
+    });
 
     function exportToCSV() {
         const table = document.getElementById('logTable');
