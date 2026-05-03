@@ -19,10 +19,12 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
             
             $success_count = 0;
             $error_count = 0;
+            $import_type = $_POST['import_type'] ?? 'medicine';
             
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                // Expected CSV format: Name, Description, Category, Unit, Type(medicine/consumable), Quantity, Expiration Date(YYYY-MM-DD)
-                if (count($data) >= 6) {
+                if ($import_type === 'medicine') {
+                    // Expected CSV format: Name, Description, Category, Unit, Type(medicine/consumable), Quantity, Expiration Date(YYYY-MM-DD)
+                    if (count($data) >= 6) {
                     $name     = $conn->real_escape_string(trim($data[0]));
                     $label    = $conn->real_escape_string(trim($data[1]));
                     $category = $conn->real_escape_string(trim($data[2] ?? 'General'));
@@ -65,6 +67,45 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
                     }
                 } else {
                     $error_count++;
+                }
+            } else if ($import_type === 'dental' || $import_type === 'medical') {
+                // Expected: Item Name, Unit, Brand/Serial, RIS/ICS/PAR, Color, Date Procured, Qty Serviceable, Qty Unserviceable, Qty Repair, Remarks
+                if (count($data) >= 7) {
+                        $name     = $conn->real_escape_string(trim($data[0]));
+                        $unit     = $conn->real_escape_string(trim($data[1] ?? 'Unit'));
+                        $brand    = $conn->real_escape_string(trim($data[2] ?? ''));
+                        $ris      = $conn->real_escape_string(trim($data[3] ?? ''));
+                        $color    = $conn->real_escape_string(trim($data[4] ?? ''));
+                        $date_acq = trim($data[5] ?? '');
+                        $qsrv     = intval($data[6] ?? 0);
+                        $qunsrv   = intval($data[7] ?? 0);
+                        $qrep     = intval($data[8] ?? 0);
+                        $remarks  = $conn->real_escape_string(trim($data[9] ?? ''));
+                        
+                        $qty = $qsrv + $qunsrv + $qrep;
+                        
+                        if (empty($name)) {
+                            $error_count++;
+                            continue;
+                        }
+
+                        $val_acq = (!empty($date_acq) && strtotime($date_acq)) ? "'" . $conn->real_escape_string($date_acq) . "'" : "NULL";
+
+                        $sql = "INSERT INTO medicines 
+                                (name, label, type, category, unit, batch_number, quantity, expiration_date, brand_serial, ris_id, color, date_acquired, qty_serviceable, qty_unserviceable, qty_repair, remarks, is_archived) 
+                                VALUES 
+                                ('$name', '', '$import_type', '', '$unit', 1, $qty, NULL, '$brand', '$ris', '$color', $val_acq, $qsrv, $qunsrv, $qrep, '$remarks', 0)";
+
+                        if ($conn->query($sql)) {
+                            $new_id = $conn->insert_id;
+                            $conn->query("INSERT INTO logs (medicine_id, quantity, action) VALUES ($new_id, $qty, 'Imported via CSV')");
+                            $success_count++;
+                        } else {
+                            $error_count++;
+                        }
+                    } else {
+                        $error_count++;
+                    }
                 }
             }
             fclose($handle);
@@ -201,6 +242,15 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
         </div>
 
         <form method="POST" action="import.php" enctype="multipart/form-data">
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 8px; color: #2c3e50;">Select Import Category:</label>
+                <select name="import_type" id="importTypeSelect" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; outline: none; transition: border-color 0.3s;" onfocus="this.style.borderColor='#3498db'" onblur="this.style.borderColor='#e0e0e0'">
+                    <option value="medicine">💊 Medicine & Consumables</option>
+                    <option value="dental">🦷 Dental Device & Equipment</option>
+                    <option value="medical">🩺 Medical Device & Equipment</option>
+                </select>
+            </div>
+
             <div class="upload-area" id="dropZone">
                 <div class="upload-icon">📄</div>
                 <div class="upload-text">Drag and drop your CSV file here</div>
@@ -212,7 +262,7 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
             <button type="submit" name="import" class="btn-submit">🚀 Start Import</button>
         </form>
 
-        <div class="instructions">
+        <div class="instructions" id="instructionsMedicine">
             <h4>⚠️ Important CSV Format Rules:</h4>
             <ul>
                 <li>The first row must be headers (it will be skipped).</li>
@@ -226,6 +276,21 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
                 Alcohol, 70% Isopropyl, General, bottle, consumable, 50,<br>
             </div>
             <a href="sample.csv" download style="display:inline-block; margin-top:10px; color:#3498db; font-weight:bold; text-decoration:none;">⬇️ Download Sample CSV</a>
+        </div>
+
+        <div class="instructions" id="instructionsEquipment" style="display: none;">
+            <h4>⚠️ Important CSV Format Rules:</h4>
+            <ul>
+                <li>The first row must be headers (it will be skipped).</li>
+                <li>Ensure the columns are in this exact order.</li>
+                <li><strong>Date Procured</strong> format must be <code>YYYY-MM-DD</code> (e.g., 2024-05-01). Leave blank if not applicable.</li>
+                <li>Total quantity will be auto-computed from Serviceable + Unserviceable + Repair quantities.</li>
+            </ul>
+            <div class="csv-format">
+                Item Name, Unit, Brand/Serial, RIS/ICS/PAR, Color, Date Procured, Qty Serviceable, Qty Unserviceable, Qty Repair, Remarks<br>
+                Dental Chair, Unit, SN-1234, RIS-2023-01, White, 2023-01-15, 1, 0, 0, Good condition<br>
+            </div>
+            <a href="sample_dental.csv" id="downloadSampleBtn" download style="display:inline-block; margin-top:10px; color:#3498db; font-weight:bold; text-decoration:none;">⬇️ Download Dental Sample CSV</a>
         </div>
     </div>
 </div>
@@ -258,6 +323,28 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
 
     ['dragleave', 'drop'].forEach(eventName => {
         dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    const importTypeSelect = document.getElementById('importTypeSelect');
+    const instructionsMedicine = document.getElementById('instructionsMedicine');
+    const instructionsEquipment = document.getElementById('instructionsEquipment');
+    const downloadSampleBtn = document.getElementById('downloadSampleBtn');
+
+    importTypeSelect.addEventListener('change', function() {
+        if (this.value === 'medicine') {
+            instructionsMedicine.style.display = 'block';
+            instructionsEquipment.style.display = 'none';
+        } else {
+            instructionsMedicine.style.display = 'none';
+            instructionsEquipment.style.display = 'block';
+            if (this.value === 'dental') {
+                downloadSampleBtn.href = 'sample_dental.csv';
+                downloadSampleBtn.textContent = '⬇️ Download Dental Sample CSV';
+            } else {
+                downloadSampleBtn.href = 'sample_medical.csv';
+                downloadSampleBtn.textContent = '⬇️ Download Medical Sample CSV';
+            }
+        }
     });
 
     <?php if ($message): ?>
