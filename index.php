@@ -271,7 +271,7 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             <div class="alert-icon"><i data-lucide="trending-down"></i></div>
             <div class="alert-details">
                 <h3><?php echo $low_stock_count; ?></h3>
-                <p>Low Stock Items (≤ 5)</p>
+                <p>Low Stock Items</p>
             </div>
             <?php if ($filter === 'low'): ?>
                 <i data-lucide="x-circle" style="position: absolute; right: 10px; top: 10px; width: 16px; height: 16px; color: var(--color-text-muted);"></i>

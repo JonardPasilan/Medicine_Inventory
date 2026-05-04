@@ -99,6 +99,28 @@
 [data-theme="dark"] tr:hover { background: var(--color-overlay) !important; }
 [data-theme="dark"] .topbar { background: hsl(220, 20%, 8%) !important; border-bottom: 1px solid var(--color-border); }
 
+/* Dark Mode Neon Glow Effects for Buttons */
+[data-theme="dark"] .nav a:hover,
+[data-theme="dark"] .theme-toggle:hover,
+[data-theme="dark"] .tab-btn:hover,
+[data-theme="dark"] .btn:hover,
+[data-theme="dark"] .modal-btn:hover,
+[data-theme="dark"] .search-form button:hover {
+    box-shadow: 0 0 8px var(--color-brand), 0 0 16px var(--color-brand) !important;
+    border-color: var(--color-brand) !important;
+    color: #ffffff !important;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Neon Red for Delete / Cancel Actions */
+[data-theme="dark"] .btn-delete:hover,
+[data-theme="dark"] .modal-btn-cancel:hover {
+    box-shadow: 0 0 8px hsl(0, 80%, 50%), 0 0 16px hsl(0, 80%, 50%) !important;
+    border-color: hsl(0, 80%, 50%) !important;
+    color: #ffffff !important;
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.5) !important;
+}
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
