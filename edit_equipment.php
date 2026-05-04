@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/header.php';
 
 $id = intval($_GET['id'] ?? 0);
 if (!$id) { header("Location: index.php"); exit(); }
@@ -40,6 +39,8 @@ if (isset($_POST['update_equipment'])) {
     header("Location: index.php");
     exit();
 }
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <!-- Flatpickr -->

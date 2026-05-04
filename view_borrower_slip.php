@@ -1,5 +1,4 @@
 <?php 
-require_once __DIR__ . '/header.php';
 require_once __DIR__ . '/db.php';
 
 if (!isset($_GET['id'])) {
@@ -44,6 +43,8 @@ if (!$res || $res->num_rows == 0) {
 $slip = $res->fetch_assoc();
 
 $items_res = $conn->query("SELECT * FROM borrower_slip_items WHERE slip_id = $id");
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <style>

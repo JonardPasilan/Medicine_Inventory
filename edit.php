@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/header.php';
 
 // Validate batch ID
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -23,6 +22,8 @@ if (in_array($row['type'], ['dental', 'medical'])) {
     header("Location: edit_equipment.php?id=$id");
     exit();
 }
+
+require_once __DIR__ . '/header.php';
 ?>
 
     <!-- Flatpickr for Date Formatting -->

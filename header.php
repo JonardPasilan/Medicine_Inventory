@@ -60,6 +60,45 @@
   --text-3xl:  40px;
 }
 
+/* DARK MODE OVERRIDES */
+:root[data-theme="dark"] {
+  --color-brand-light: hsl(245, 60%, 20%);
+  --color-canvas:   hsl(220, 20%, 10%);
+  --color-surface:  hsl(220, 20%, 15%);
+  --color-overlay:  hsl(220, 20%, 22%);
+  --color-text-primary:   hsl(220, 15%, 95%);
+  --color-text-secondary: hsl(220, 10%, 75%);
+  --color-text-muted:     hsl(220,  8%, 60%);
+  --color-border:        hsl(220, 15%, 25%);
+  --color-border-strong: hsl(220, 15%, 35%);
+}
+
+[data-theme="dark"] body { background: var(--color-canvas) !important; color: var(--color-text-primary) !important; }
+[data-theme="dark"] .form-card, 
+[data-theme="dark"] .table-card, 
+[data-theme="dark"] .header-card, 
+[data-theme="dark"] .stat-card, 
+[data-theme="dark"] .filter-section, 
+[data-theme="dark"] .table-container,
+[data-theme="dark"] .print-area,
+[data-theme="dark"] .batch-card,
+[data-theme="dark"] .medicine-preview {
+    background: var(--color-surface) !important;
+    border-color: var(--color-border) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+}
+[data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea {
+    background: var(--color-overlay) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text-primary) !important;
+}
+[data-theme="dark"] th { background: var(--color-overlay) !important; color: var(--color-text-primary) !important; border-color: var(--color-border) !important; }
+[data-theme="dark"] td { border-color: var(--color-border) !important; color: var(--color-text-secondary) !important; }
+[data-theme="dark"] .medicine-name, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] label { color: var(--color-text-primary) !important; }
+[data-theme="dark"] p { color: var(--color-text-secondary) !important; }
+[data-theme="dark"] tr:hover { background: var(--color-overlay) !important; }
+[data-theme="dark"] .topbar { background: hsl(220, 20%, 8%) !important; border-bottom: 1px solid var(--color-border); }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -67,6 +106,7 @@
             color: var(--color-text-primary);
             min-height: 100vh;
             font-size: var(--text-base);
+            transition: background-color var(--transition-base), color var(--transition-base);
         }
 
         button, a, [role="button"] {
@@ -93,8 +133,9 @@
             align-items: center;
             gap: 10px;
             border-bottom: 1px solid var(--color-border);
+            position: relative; /* For absolute positioning of toggle */
         }
-        .nav a {
+        .nav a, .theme-toggle {
             color: var(--color-text-secondary);
             text-decoration: none;
             font-size: var(--text-sm);
@@ -104,8 +145,12 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            font-family: 'Inter', sans-serif;
         }
-        .nav a:hover {
+        .nav a:hover, .theme-toggle:hover {
             background: var(--color-overlay);
             color: var(--color-text-primary);
             transform: translateY(-1px);
@@ -114,6 +159,14 @@
             background: var(--color-brand-light);
             color: var(--color-brand-dark);
             font-weight: 600;
+        }
+        .theme-toggle {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--color-overlay);
+            z-index: 10;
         }
 
         /* Top Title Bar */
@@ -131,8 +184,17 @@
             gap: 8px;
         }
 
+        @media (max-width: 900px) {
+            .theme-toggle {
+                position: static;
+                transform: none;
+                margin-left: 0;
+                margin: 0 auto; /* Center on small screens */
+            }
+        }
+        
         @media (max-width: 600px) {
-            .nav a {
+            .nav a, .theme-toggle {
                 font-size: var(--text-xs);
                 padding: 6px 10px;
             }
@@ -143,7 +205,7 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.4);
+            background: rgba(15, 23, 42, 0.6);
             display: none;
             align-items: center;
             justify-content: center;
@@ -164,6 +226,7 @@
             transform: translateY(20px);
             transition: transform var(--transition-base);
             text-align: center;
+            border: 1px solid var(--color-border);
         }
         .modal-overlay.show .modal-card { transform: translateY(0); }
         
@@ -227,6 +290,26 @@
         }
     </style>
     <script>
+        // Theme initialization before rendering to prevent flash
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update icon
+            const themeIcon = document.getElementById('themeIcon');
+            if(themeIcon) {
+                themeIcon.setAttribute('data-lucide', newTheme === 'dark' ? 'sun' : 'moon');
+                lucide.createIcons();
+            }
+        }
+
         // Custom Modal Logic
         let modalResolve = null;
 
@@ -295,6 +378,12 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            // Set initial theme icon
+            const themeIcon = document.getElementById('themeIcon');
+            if(themeIcon) {
+                themeIcon.setAttribute('data-lucide', savedTheme === 'dark' ? 'sun' : 'moon');
+            }
+
             lucide.createIcons();
             
             // Modal button events
@@ -320,6 +409,11 @@
     <a href="dispense.php" class="<?php echo $current_page == 'dispense.php' ? 'active' : ''; ?>"><i data-lucide="pill" style="width: 16px; height: 16px;"></i> Dispense</a>
     <a href="borrowers_slip.php" class="<?php echo $current_page == 'borrowers_slip.php' ? 'active' : ''; ?>"><i data-lucide="shopping-cart" style="width: 16px; height: 16px;"></i> Borrower's Slip</a>
     <a href="logs.php" class="<?php echo $current_page == 'logs.php' ? 'active' : ''; ?>"><i data-lucide="clipboard-list" style="width: 16px; height: 16px;"></i> Logs</a>
+    
+    <!-- Theme Toggler -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+        <i id="themeIcon" data-lucide="moon" style="width: 18px; height: 18px;"></i> <span class="hide-mobile">Dark Mode</span>
+    </button>
 </div>
 
 <!-- Custom Modal HTML -->
