@@ -1,16 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 
-// Handle Delete Logs (MUST BE BEFORE header.php)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_logs'])) {
-    if (!empty($_POST['log_ids']) && is_array($_POST['log_ids'])) {
-        $ids = array_map('intval', $_POST['log_ids']);
-        $ids_str = implode(',', $ids);
-        $conn->query("DELETE FROM logs WHERE id IN ($ids_str)");
-        header("Location: logs.php?deleted=" . count($ids));
-        exit();
-    }
-}
+// Delete logs functionality removed for audit trail integrity
 
 require_once __DIR__ . '/header.php';
 ?>
@@ -159,11 +150,6 @@ require_once __DIR__ . '/header.php';
 
 
 <div class="container">
-    <?php if (isset($_GET['deleted'])): ?>
-        <div style="background: #e8f5e9; color: #2e7d32; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 500;">
-            ✅ Successfully deleted <?php echo intval($_GET['deleted']); ?> log record(s).
-        </div>
-    <?php endif; ?>
 
     <div class="header-card">
         <div class="header-content">
@@ -244,9 +230,8 @@ require_once __DIR__ . '/header.php';
         </form>
     </div>
 
-    <form method="POST" id="logsForm">
-        <div class="export-section" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <button type="submit" name="delete_logs" class="btn-delete" style="background:#e74c3c; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:500;">🗑️ Delete Selected</button>
+    <div id="logsForm">
+        <div class="export-section" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px;">
             <button type="button" onclick="exportToCSV()" class="btn-export">📊 Export to CSV</button>
         </div>
 
@@ -254,19 +239,47 @@ require_once __DIR__ . '/header.php';
             <table id="logTable">
                 <thead>
                     <tr>
-                        <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
                         <th>#</th>
-                    <th>Item Details</th>
-                    <th>Expiry / Procured Date</th>
-                    <th>Qty</th>
-                    <th>Action</th>
-                    <th>Details</th>
-                    <th>Date &amp; Time</th>
-                </tr>
+                        <th>Item Details</th>
+                        <th>Expiry / Procured Date</th>
+                        <th>Qty</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                        <th>Date &amp; Time</th>
+                    </tr>
             </thead>
             <tbody>
             <?php
-            // Build query — LEFT JOIN so deleted batches still show
+            // Pagination settings
+            $limit = 50; 
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $page = max($page, 1);
+            $offset = ($page - 1) * $limit;
+
+            $where_clause = "1=1";
+
+            if (!empty($_GET['item_type'])) {
+                $ftype = mysqli_real_escape_string($conn, $_GET['item_type']);
+                $where_clause .= " AND m.type = '$ftype'";
+            }
+            if (!empty($_GET['action'])) {
+                $faction = mysqli_real_escape_string($conn, $_GET['action']);
+                $where_clause .= " AND l.action = '$faction'";
+            }
+            if (!empty($_GET['date_from'])) {
+                $dfrom = mysqli_real_escape_string($conn, $_GET['date_from']);
+                $where_clause .= " AND DATE(l.date) >= '$dfrom'";
+            }
+            if (!empty($_GET['date_to'])) {
+                $dto = mysqli_real_escape_string($conn, $_GET['date_to']);
+                $where_clause .= " AND DATE(l.date) <= '$dto'";
+            }
+
+            // Get total for pagination
+            $count_query = "SELECT COUNT(*) as total FROM logs l LEFT JOIN medicines m ON l.medicine_id = m.id WHERE $where_clause";
+            $total_records = $conn->query($count_query)->fetch_assoc()['total'];
+            $total_pages = ceil($total_records / $limit);
+
             $query = "
                 SELECT
                     l.id,
@@ -274,6 +287,7 @@ require_once __DIR__ . '/header.php';
                     l.action,
                     l.patient_name,
                     l.prescriber_name,
+                    l.staff_name,
                     DATE_FORMAT(l.date, '%M %d, %Y %h:%i %p') AS fmt_date,
                     l.medicine_id,
                     m.name,
@@ -284,30 +298,14 @@ require_once __DIR__ . '/header.php';
                     m.date_acquired
                 FROM logs l
                 LEFT JOIN medicines m ON l.medicine_id = m.id
-                WHERE 1=1";
-
-            if (!empty($_GET['item_type'])) {
-                $ftype = mysqli_real_escape_string($conn, $_GET['item_type']);
-                $query .= " AND m.type = '$ftype'";
-            }
-            if (!empty($_GET['action'])) {
-                $faction = mysqli_real_escape_string($conn, $_GET['action']);
-                $query .= " AND l.action = '$faction'";
-            }
-            if (!empty($_GET['date_from'])) {
-                $dfrom = mysqli_real_escape_string($conn, $_GET['date_from']);
-                $query .= " AND DATE(l.date) >= '$dfrom'";
-            }
-            if (!empty($_GET['date_to'])) {
-                $dto = mysqli_real_escape_string($conn, $_GET['date_to']);
-                $query .= " AND DATE(l.date) <= '$dto'";
-            }
-            $query .= " ORDER BY l.id DESC";
+                WHERE $where_clause
+                ORDER BY l.id DESC
+                LIMIT $limit OFFSET $offset";
 
             $r = $conn->query($query);
 
             if ($r && $r->num_rows > 0) {
-                $row_num = 0;
+                $row_num = $offset;
                 while ($row = $r->fetch_assoc()) {
                     $row_num++;
                     $qty = (int)$row['quantity'];
@@ -367,21 +365,28 @@ require_once __DIR__ . '/header.php';
                     $qty_class = $qty <= 5 ? 'qty-low' : 'qty-normal';
                     $fmt_date  = htmlspecialchars((string)$row['fmt_date'], ENT_QUOTES, 'UTF-8');
                     
-                    // Patient/Prescriber Details
+                    // Patient/Prescriber/Staff Details
                     $details_html = "<span style='color:#95a5a6;'>—</span>";
+                    $p_name = !empty($row['patient_name']) ? htmlspecialchars($row['patient_name']) : 'N/A';
+                    $d_name = !empty($row['prescriber_name']) ? htmlspecialchars($row['prescriber_name']) : 'N/A';
+                    $s_name = !empty($row['staff_name']) ? htmlspecialchars($row['staff_name']) : 'N/A';
+
                     if ($row['action'] === 'Released to patient') {
-                        $p_name = !empty($row['patient_name']) ? htmlspecialchars($row['patient_name']) : 'N/A';
-                        $d_name = !empty($row['prescriber_name']) ? htmlspecialchars($row['prescriber_name']) : 'N/A';
-                        if ($p_name !== 'N/A' || $d_name !== 'N/A') {
-                            $details_html = "<div style='font-size:12px; line-height:1.4;'>
-                                <div><strong>Patient:</strong> {$p_name}</div>
-                                <div><strong>Dr.:</strong> {$d_name}</div>
-                            </div>";
+                        $details_html = "<div style='font-size:12px; line-height:1.4;'>
+                            " . ($p_name !== 'N/A' ? "<div><strong>Patient:</strong> {$p_name}</div>" : "") . "
+                            " . ($d_name !== 'N/A' ? "<div><strong>Dr.:</strong> {$d_name}</div>" : "") . "
+                            " . ($s_name !== 'N/A' ? "<div><strong>Staff:</strong> <span style='color:#2980b9'>{$s_name}</span></div>" : "") . "
+                        </div>";
+                        if ($details_html === "<div style='font-size:12px; line-height:1.4;'>\n                            \n                            \n                            \n                        </div>") {
+                            $details_html = "<span style='color:#95a5a6;'>—</span>";
                         }
+                    } elseif ($s_name !== 'N/A') {
+                         $details_html = "<div style='font-size:12px; line-height:1.4;'>
+                            <div><strong>Staff:</strong> <span style='color:#2980b9'>{$s_name}</span></div>
+                        </div>";
                     }
 
                     echo "<tr>
-                        <td><input type='checkbox' name='log_ids[]' value='{$row['id']}' class='log-checkbox'></td>
                         <td style='color:#aaa; font-size:12px;'>{$row_num}</td>
                         <td>{$med_display}</td>
                         <td>{$bexp_disp}</td>
@@ -392,7 +397,7 @@ require_once __DIR__ . '/header.php';
                     </tr>";
                 }
             } else {
-                echo "<tr><td colspan='8' class='no-data'>
+                echo "<tr><td colspan='7' class='no-data'>
                          <div class='icon'>📭</div>
                          <div>No log records found</div>
                          <small style='margin-top:10px; display:block;'>Try adjusting your filters</small>
@@ -402,49 +407,47 @@ require_once __DIR__ . '/header.php';
             </tbody>
         </table>
     </div>
-    </form>
+
+    <?php if ($total_pages > 1): ?>
+        <div style="margin-top: 20px; text-align: center;">
+            <?php
+            // Build current query params to keep filters in pagination links
+            $params = $_GET;
+            for ($i = 1; $i <= $total_pages; $i++) {
+                $params['page'] = $i;
+                $qs = http_build_query($params);
+                $active = ($i == $page) ? 'background:#1f4f87; color:white;' : 'background:white; color:#1f4f87; border: 1px solid #1f4f87;';
+                echo "<a href='logs.php?{$qs}' style='display:inline-block; padding:8px 12px; margin: 0 4px; border-radius:5px; text-decoration:none; font-size:14px; transition:0.3s; {$active}'>{$i}</a>";
+            }
+            ?>
+        </div>
+    <?php endif; ?>
+
 </div>
 
 <script>
-    function toggleAll(source) {
-        let checkboxes = document.querySelectorAll('.log-checkbox');
-        for(let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = source.checked;
-        }
-    }
-
-    document.getElementById('logsForm').addEventListener('submit', async function(e) {
-        // Only intercept if the delete button was clicked
-        if (e.submitter && e.submitter.name === 'delete_logs') {
-            e.preventDefault();
-            const confirmed = await showConfirm("Confirm Delete", "Are you sure you want to delete the selected log records?");
-            if (confirmed) {
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'delete_logs';
-                hiddenInput.value = '1';
-                this.appendChild(hiddenInput);
-                this.submit();
-            }
-        }
-    });
-
     function exportToCSV() {
         const table = document.getElementById('logTable');
         const csv   = [];
 
         // Headers
         const headers = [];
-        table.querySelectorAll('thead th').forEach(th => headers.push('"' + th.innerText + '"'));
+        const thElements = table.querySelectorAll('thead th');
+        for (let i = 0; i < thElements.length; i++) {
+            headers.push('"' + thElements[i].innerText + '"');
+        }
         csv.push(headers.join(','));
 
         // Rows
         table.querySelectorAll('tbody tr').forEach(function(row) {
+            const tdElements = row.querySelectorAll('td');
+            if (tdElements.length === 1) return; // Skip "No data" row
+
             const rowData = [];
-            row.querySelectorAll('td').forEach(function(cell) {
-                let text = cell.innerText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+            for (let i = 0; i < tdElements.length; i++) {
+                let text = tdElements[i].innerText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
                 rowData.push('"' + text.replace(/"/g, '""') + '"');
-            });
+            }
             csv.push(rowData.join(','));
         });
 

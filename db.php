@@ -64,6 +64,9 @@ if (!in_array('patient_name', $existing_log_cols)) {
 if (!in_array('prescriber_name', $existing_log_cols)) {
     $conn->query("ALTER TABLE logs ADD COLUMN prescriber_name VARCHAR(100) DEFAULT NULL AFTER patient_name");
 }
+if (!in_array('staff_name', $existing_log_cols)) {
+    $conn->query("ALTER TABLE logs ADD COLUMN staff_name VARCHAR(100) DEFAULT NULL AFTER prescriber_name");
+}
 
 // Borrower's Slip Tables
 $conn->query("CREATE TABLE IF NOT EXISTS `borrowers_slips` (
