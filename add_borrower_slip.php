@@ -1,5 +1,4 @@
 <?php 
-require_once __DIR__ . '/header.php';
 require_once __DIR__ . '/db.php';
 
 $status_msg = '';
@@ -42,6 +41,8 @@ if (isset($_POST['save_slip'])) {
         $status_type = 'error';
     }
 }
+
+require_once __DIR__ . '/header.php';
 
 // Fetch available equipment from inventory for dropdown
 $equipment_list = $conn->query("

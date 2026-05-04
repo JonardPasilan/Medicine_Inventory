@@ -1,5 +1,4 @@
 <?php 
-require_once __DIR__ . '/header.php';
 require_once __DIR__ . '/db.php';
 
 // Handle delete
@@ -9,6 +8,8 @@ if (isset($_POST['delete_id'])) {
     header("Location: borrowers_slip.php?deleted=1");
     exit();
 }
+
+require_once __DIR__ . '/header.php';
 ?>
 
 <style>

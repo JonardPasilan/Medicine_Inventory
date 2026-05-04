@@ -3,6 +3,97 @@ require_once __DIR__ . '/db.php';
 
 // Delete logs functionality removed for audit trail integrity
 
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    $where_clause = "1=1";
+    if (!empty($_GET['item_type'])) {
+        $ftype = mysqli_real_escape_string($conn, $_GET['item_type']);
+        $where_clause .= " AND m.type = '$ftype'";
+    }
+    if (!empty($_GET['action'])) {
+        $faction = mysqli_real_escape_string($conn, $_GET['action']);
+        $where_clause .= " AND l.action = '$faction'";
+    }
+    if (!empty($_GET['date_from'])) {
+        $dfrom = mysqli_real_escape_string($conn, $_GET['date_from']);
+        $where_clause .= " AND DATE(l.date) >= '$dfrom'";
+    }
+    if (!empty($_GET['date_to'])) {
+        $dto = mysqli_real_escape_string($conn, $_GET['date_to']);
+        $where_clause .= " AND DATE(l.date) <= '$dto'";
+    }
+
+    $query = "
+        SELECT
+            l.id,
+            l.quantity,
+            l.action,
+            l.patient_name,
+            l.prescriber_name,
+            l.staff_name,
+            DATE_FORMAT(l.date, '%M %d, %Y %h:%i %p') AS fmt_date,
+            l.medicine_id,
+            m.name,
+            m.label,
+            m.batch_number,
+            m.expiration_date,
+            m.type,
+            m.date_acquired
+        FROM logs l
+        LEFT JOIN medicines m ON l.medicine_id = m.id
+        WHERE $where_clause
+        ORDER BY l.id DESC";
+
+    $r = $conn->query($query);
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=inventory_logs_' . date('Y-m-d') . '.csv');
+    $output = fopen('php://output', 'w');
+
+    // Headers
+    fputcsv($output, ['#', 'Item Details', 'Expiry / Procured Date', 'Qty', 'Action', 'Details', 'Date & Time']);
+
+    if ($r && $r->num_rows > 0) {
+        $row_num = 0;
+        while ($row = $r->fetch_assoc()) {
+            $row_num++;
+            
+            $mname = $row['name'] ? $row['name'] : 'Deleted Medicine';
+            $mlabel = $row['label'] ? " ({$row['label']})" : '';
+            $batch_label = ($row['type'] == 'dental' || $row['type'] == 'medical') ? "Equipment" : "Batch #{$row['batch_number']}";
+            $item_details = $mname . $mlabel . " - " . $batch_label . " (ID: {$row['medicine_id']})";
+
+            $bexp_disp = 'N/A';
+            if ($row['type'] == 'dental' || $row['type'] == 'medical') {
+                if (!empty($row['date_acquired']) && $row['date_acquired'] != '0000-00-00') {
+                    $bexp_disp = date('M d, Y', strtotime($row['date_acquired']));
+                }
+            } else {
+                if (!empty($row['expiration_date']) && $row['expiration_date'] != '0000-00-00') {
+                    $bexp_disp = date('M d, Y', strtotime($row['expiration_date']));
+                }
+            }
+
+            $details_arr = [];
+            if (!empty($row['patient_name'])) $details_arr[] = "Patient: " . $row['patient_name'];
+            if (!empty($row['prescriber_name'])) $details_arr[] = "Dr: " . $row['prescriber_name'];
+            if (!empty($row['staff_name'])) $details_arr[] = "Staff: " . $row['staff_name'];
+            $details_str = empty($details_arr) ? '—' : implode(' | ', $details_arr);
+
+            fputcsv($output, [
+                $row_num,
+                $item_details,
+                $bexp_disp,
+                $row['quantity'] . " unit(s)",
+                $row['action'],
+                $details_str,
+                $row['fmt_date']
+            ]);
+        }
+    }
+    fclose($output);
+    exit();
+}
+
 require_once __DIR__ . '/header.php';
 ?>
 <!DOCTYPE html>
@@ -222,18 +313,15 @@ require_once __DIR__ . '/header.php';
                 <input type="date" name="date_to"
                        value="<?php echo isset($_GET['date_to']) ? htmlspecialchars($_GET['date_to']) : ''; ?>">
             </div>
-            <div class="filter-buttons">
-                <button type="submit" name="filter" class="btn-filter">Apply Filter</button>
-                <a href="logs.php" class="btn-reset"
-                   style="text-decoration:none; display:inline-block; text-align:center;">Reset</a>
+            <div class="filter-buttons" style="width:100%; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" name="filter" value="1" class="btn-filter">Apply Filter</button>
+                    <a href="logs.php" class="btn-reset" style="text-decoration:none; display:inline-block; text-align:center;">Reset</a>
+                </div>
+                <button type="submit" name="export" value="csv" class="btn-export">📊 Export to CSV</button>
             </div>
         </form>
     </div>
-
-    <div id="logsForm">
-        <div class="export-section" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px;">
-            <button type="button" onclick="exportToCSV()" class="btn-export">📊 Export to CSV</button>
-        </div>
 
         <div class="table-container">
             <table id="logTable">
@@ -425,43 +513,7 @@ require_once __DIR__ . '/header.php';
 
 </div>
 
-<script>
-    function exportToCSV() {
-        const table = document.getElementById('logTable');
-        const csv   = [];
 
-        // Headers
-        const headers = [];
-        const thElements = table.querySelectorAll('thead th');
-        for (let i = 0; i < thElements.length; i++) {
-            headers.push('"' + thElements[i].innerText + '"');
-        }
-        csv.push(headers.join(','));
-
-        // Rows
-        table.querySelectorAll('tbody tr').forEach(function(row) {
-            const tdElements = row.querySelectorAll('td');
-            if (tdElements.length === 1) return; // Skip "No data" row
-
-            const rowData = [];
-            for (let i = 0; i < tdElements.length; i++) {
-                let text = tdElements[i].innerText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-                rowData.push('"' + text.replace(/"/g, '""') + '"');
-            }
-            csv.push(rowData.join(','));
-        });
-
-        const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const url  = window.URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href     = url;
-        a.download = 'medicine_logs_' + new Date().toISOString().slice(0, 10) + '.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    }
-</script>
 
 </body>
 </html>
