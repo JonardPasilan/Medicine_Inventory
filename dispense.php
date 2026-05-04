@@ -94,8 +94,8 @@ $meds_query = $conn->query("
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6f9;
+            font-family: 'Inter', sans-serif;
+            background: var(--color-canvas);
             min-height: 100vh;
         }
 
@@ -103,8 +103,8 @@ $meds_query = $conn->query("
         .container { max-width: 620px; margin: 40px auto; padding: 0 20px; }
 
         .form-card {
-            background: white; border-radius: 15px; padding: 35px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--color-surface); border-radius: var(--radius-lg); padding: 35px;
+            box-shadow: var(--shadow-md); border: 1px solid var(--color-border);
             animation: fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1);
         }
         @keyframes fadeIn {
@@ -115,35 +115,35 @@ $meds_query = $conn->query("
         .form-header { text-align: center; margin-bottom: 30px; }
         .form-header .icon { font-size: 50px; margin-bottom: 10px; transition: transform 0.5s ease; }
         .form-card:hover .icon { transform: rotate(-15deg) scale(1.1); }
-        .form-header h2 { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
-        .form-header p  { color: #7f8c8d; font-size: 14px; }
+        .form-header h2 { color: var(--color-text-primary); font-size: 28px; margin-bottom: 10px; }
+        .form-header p  { color: var(--color-text-secondary); font-size: 14px; }
 
         .form-group { margin-bottom: 20px; }
 
         label {
             display: block; margin-bottom: 8px;
-            color: #2c3e50; font-weight: 500; font-size: 14px;
+            color: var(--color-text-primary); font-weight: 500; font-size: 14px;
         }
         label .required { color: #e74c3c; margin-left: 3px; }
 
         select, input {
             width: 100%; padding: 12px 15px;
-            border: 2px solid #e0e0e0; border-radius: 8px;
+            border: 2px solid var(--color-border); border-radius: var(--radius-sm);
             font-size: 14px; font-family: inherit;
-            transition: all 0.3s ease; background: white;
+            transition: all 0.3s ease; background: var(--color-overlay); color: var(--color-text-primary);
         }
         select:focus, input:focus {
-            outline: none; border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+            outline: none; border-color: var(--color-brand);
+            box-shadow: 0 0 0 3px var(--color-brand-light);
             transform: translateY(-1px);
         }
 
         /* Stock Info Panel */
         .stock-panel {
-            border-radius: 10px; padding: 16px 18px;
+            border-radius: var(--radius-md); padding: 16px 18px;
             margin-bottom: 20px; display: none;
-            border-left: 4px solid #3498db;
-            background: #f0f8ff;
+            border-left: 4px solid var(--color-brand);
+            background: var(--color-brand-light);
             font-size: 14px;
             animation: slideDown 0.4s ease;
         }
@@ -152,17 +152,17 @@ $meds_query = $conn->query("
             to { opacity: 1; transform: translateY(0); }
         }
         .stock-panel .sp-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-        .stock-panel .sp-value { font-weight: 700; color: #2c3e50; }
+        .stock-panel .sp-value { font-weight: 700; color: var(--color-text-primary); }
         .stock-panel.warn  { border-left-color: #f39c12; background: #fff8e7; }
         .stock-panel.danger{ border-left-color: #e74c3c; background: #ffeaea; }
 
         /* Batch list inside panel */
         .batch-list { margin-top: 10px; }
-        .batch-list-title { font-weight: 600; color: #2c3e50; margin-bottom: 6px; font-size: 13px; }
+        .batch-list-title { font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px; font-size: 13px; }
         .batch-item {
             display: flex; justify-content: space-between;
             padding: 5px 10px; border-radius: 5px;
-            background: rgba(255,255,255,0.6);
+            background: var(--color-overlay);
             margin-bottom: 4px; font-size: 12px;
             transition: transform 0.2s ease;
         }
@@ -181,9 +181,9 @@ $meds_query = $conn->query("
         }
         .warn-box.danger-box { background: #ffeaea; border-left-color: #e74c3c; color: #c0392b; }
         .fifo-note {
-            background: #e8f4fd; border-left: 4px solid #3498db;
-            border-radius: 8px; padding: 12px 15px;
-            margin-bottom: 16px; font-size: 13px; color: #1a5276;
+            background: var(--color-brand-light); border-left: 4px solid var(--color-brand);
+            border-radius: var(--radius-sm); padding: 12px 15px;
+            margin-bottom: 16px; font-size: 13px; color: var(--color-text-primary);
             display: flex; align-items: center; gap: 8px;
         }
 
@@ -202,7 +202,7 @@ $meds_query = $conn->query("
             box-shadow: 0 8px 20px rgba(231,76,60,0.4);
         }
         .btn-dispense:active { transform: translateY(0); }
-        .btn-dispense:disabled { background: #95a5a6; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-dispense:disabled { background: var(--color-overlay); color: var(--color-text-muted); cursor: not-allowed; transform: none; box-shadow: none; }
 
         /* Ripple Effect */
         .ripple {
@@ -219,13 +219,13 @@ $meds_query = $conn->query("
         #loadingOverlay {
             display: none;
             position: fixed; inset: 0;
-            background: rgba(255,255,255,0.7);
+            background: rgba(0,0,0,0.35);
             z-index: 10000; align-items: center; justify-content: center;
             flex-direction: column; gap: 15px; backdrop-filter: blur(2px);
         }
         .spinner {
             width: 50px; height: 50px;
-            border: 5px solid #f3f3f3; border-top: 5px solid #3498db;
+            border: 5px solid var(--color-border); border-top: 5px solid var(--color-brand);
             border-radius: 50%; animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -233,21 +233,21 @@ $meds_query = $conn->query("
         /* Toast Notification */
         #toastContainer { position: fixed; bottom: 30px; right: 30px; z-index: 10001; }
         .toast {
-            background: white; padding: 15px 25px; border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            background: var(--color-surface); padding: 15px 25px; border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg); border: 1px solid var(--color-border);
             display: flex; align-items: center; gap: 12px; margin-top: 10px;
             transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            border-left: 5px solid #27ae60;
+            border-left: 5px solid hsl(140, 60%, 45%);
         }
         .toast.show { transform: translateX(0); }
-        .toast.error { border-left-color: #e74c3c; }
+        .toast.error { border-left-color: hsl(0, 70%, 50%); }
 
         .info-box {
-            background: #f8f9fa; border-radius: 8px;
+            background: var(--color-overlay); border-radius: var(--radius-sm);
             padding: 15px; margin-top: 20px;
-            text-align: center; border: 1px solid #e0e0e0;
+            text-align: center; border: 1px solid var(--color-border);
         }
-        .info-box a { color: #3498db; text-decoration: none; font-weight: 500; }
+        .info-box a { color: var(--color-brand); text-decoration: none; font-weight: 500; }
 
         @media (max-width: 768px) {
             .container { margin: 20px auto; }
@@ -255,8 +255,6 @@ $meds_query = $conn->query("
             .form-header h2 { font-size: 24px; }
         }
     </style>
-</head>
-<body>
 
 <div id="loadingOverlay">
     <div class="spinner"></div>

@@ -96,28 +96,23 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
 
 require_once __DIR__ . '/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dispense Logs - Clinic Management System</title>
-    <style>
+<style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6f9;
+            font-family: 'Inter', sans-serif;
+            background: var(--color-canvas);
             min-height: 100vh;
         }
-
 
         .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
 
         .header-card {
-            background: white; border-radius: 15px; padding: 30px;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg); padding: 30px;
             margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
             animation: fadeIn 0.5s ease;
         }
         @keyframes fadeIn {
@@ -126,8 +121,8 @@ require_once __DIR__ . '/header.php';
         }
         .header-content { text-align: center; }
         .header-content .icon { font-size: 50px; margin-bottom: 10px; }
-        .header-content h2 { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
-        .header-content p  { color: #7f8c8d; font-size: 14px; }
+        .header-content h2 { color: var(--color-text-primary); font-size: 28px; margin-bottom: 10px; }
+        .header-content p  { color: var(--color-text-secondary); font-size: 14px; }
 
         /* Stats */
         .stats {
@@ -136,99 +131,109 @@ require_once __DIR__ . '/header.php';
             gap: 20px; margin-bottom: 30px;
         }
         .stat-card {
-            background: white; padding: 20px;
-            border-radius: 10px; text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: var(--color-surface); padding: 20px;
+            border-radius: var(--radius-md); text-align: center;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
             transition: transform 0.3s ease;
         }
         .stat-card:hover { transform: translateY(-5px); }
-        .stat-card h3 { color: #7f8c8d; font-size: 14px; margin-bottom: 10px; }
-        .stat-card .number { font-size: 32px; font-weight: bold; color: #2c3e50; }
+        .stat-card h3 { color: var(--color-text-secondary); font-size: 14px; margin-bottom: 10px; }
+        .stat-card .number { font-size: 32px; font-weight: bold; color: var(--color-text-primary); }
 
         /* Filter */
         .filter-section {
-            background: white; border-radius: 10px; padding: 20px;
-            margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: var(--color-surface);
+            border-radius: var(--radius-md); padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
         }
         .filter-form { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
         .filter-group { flex: 1; min-width: 150px; }
         .filter-group label {
             display: block; margin-bottom: 8px;
-            color: #2c3e50; font-weight: 500; font-size: 13px;
+            color: var(--color-text-primary); font-weight: 500; font-size: 13px;
         }
         .filter-group select, .filter-group input {
             width: 100%; padding: 10px;
-            border: 2px solid #e0e0e0; border-radius: 8px;
+            border: 2px solid var(--color-border); border-radius: var(--radius-sm);
+            background: var(--color-overlay); color: var(--color-text-primary);
             font-size: 14px; transition: all 0.3s ease;
         }
         .filter-group select:focus, .filter-group input:focus {
-            outline: none; border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+            outline: none; border-color: var(--color-brand);
+            box-shadow: 0 0 0 3px var(--color-brand-light);
         }
         .filter-buttons { display: flex; gap: 10px; }
         .btn-filter {
-            padding: 10px 25px; background: #1f4f87;
-            color: white; border: none; border-radius: 8px;
+            padding: 10px 25px; background: var(--color-brand);
+            color: white; border: none; border-radius: var(--radius-sm);
             cursor: pointer; font-size: 14px; font-weight: 500;
+            font-family: 'Inter', sans-serif;
             transition: all 0.3s ease;
         }
-        .btn-filter:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(31,79,135,0.4); }
+        .btn-filter:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(90,72,220,0.35); }
         .btn-reset {
-            padding: 10px 25px; background: #95a5a6;
-            color: white; border: none; border-radius: 8px;
+            padding: 10px 25px;
+            background: var(--color-overlay); color: var(--color-text-secondary);
+            border: 1px solid var(--color-border); border-radius: var(--radius-sm);
             cursor: pointer; font-size: 14px; font-weight: 500;
-            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease; text-decoration: none; display: inline-block; text-align: center;
         }
-        .btn-reset:hover { background: #7f8c8d; transform: translateY(-2px); }
+        .btn-reset:hover { background: var(--color-border); color: var(--color-text-primary); transform: translateY(-2px); }
 
         /* Table */
         .table-container {
-            background: white; border-radius: 10px;
-            overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
         }
         table { width: 100%; border-collapse: collapse; }
         th {
-            background: #1f4f87; color: white;
+            background: var(--color-brand); color: white;
             padding: 15px; text-align: left;
             font-weight: 600; font-size: 14px;
         }
-        td { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; color: #2c3e50; }
-        tr:hover { background: #f8f9fa; }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); }
+        tr:hover { background: var(--color-overlay); }
 
-        .medicine-name { font-weight: 600; color: #2c3e50; }
+        .medicine-name { font-weight: 600; color: var(--color-text-primary); }
 
         /* Action badges */
         .badge {
             display: inline-block; padding: 4px 10px;
             border-radius: 20px; font-size: 12px; font-weight: 600;
         }
-        .badge-dispense { background: #e8f5e9; color: #2e7d32; }
-        .badge-new-batch { background: #e3f2fd; color: #1565c0; }
-        .badge-other     { background: #f3e5f5; color: #6a1b9a; }
+        .badge-dispense { background: hsl(140, 60%, 94%); color: hsl(140, 60%, 28%); }
+        .badge-new-batch { background: hsl(210, 80%, 94%); color: hsl(210, 70%, 35%); }
+        .badge-other     { background: hsl(270, 60%, 94%); color: hsl(270, 60%, 35%); }
 
         /* Quantity badges */
         .qty-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 13px; }
-        .qty-normal { background: #e3f2fd; color: #1976d2; }
-        .qty-low    { background: #fff3e0; color: #f57c00; }
+        .qty-normal { background: hsl(210, 80%, 94%); color: hsl(210, 70%, 35%); }
+        .qty-low    { background: hsl(30, 90%, 94%); color: hsl(30, 80%, 35%); }
 
-        .date-cell { font-family: monospace; font-size: 13px; color: #7f8c8d; }
-        .batch-info { font-size: 11px; color: #95a5a6; margin-top: 2px; }
+        .date-cell { font-family: monospace; font-size: 13px; color: var(--color-text-muted); }
+        .batch-info { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
 
-        .no-data { text-align: center; padding: 60px; color: #7f8c8d; }
+        .no-data { text-align: center; padding: 60px; color: var(--color-text-muted); }
         .no-data .icon { font-size: 48px; margin-bottom: 15px; }
 
         .export-section { margin-bottom: 20px; text-align: right; }
         .btn-export {
-            padding: 10px 20px; background: #27ae60;
-            color: white; border: none; border-radius: 8px;
+            padding: 10px 20px; background: hsl(140, 60%, 40%);
+            color: white; border: none; border-radius: var(--radius-sm);
             cursor: pointer; font-size: 14px; font-weight: 500;
+            font-family: 'Inter', sans-serif;
             transition: all 0.3s ease;
         }
-        .btn-export:hover { background: #229954; transform: translateY(-2px); }
+        .btn-export:hover { background: hsl(140, 60%, 33%); transform: translateY(-2px); }
 
         @media (max-width: 768px) {
-            .nav { padding: 6px 8px; gap: 4px 6px; }
-            .nav a { font-size: 12px; padding: 5px 10px; }
             .container { margin: 20px auto; }
             .filter-group { min-width: 100%; }
             .filter-buttons { width: 100%; }
@@ -236,8 +241,6 @@ require_once __DIR__ . '/header.php';
             th, td { padding: 10px; font-size: 12px; }
         }
     </style>
-</head>
-<body>
 
 
 <div class="container">

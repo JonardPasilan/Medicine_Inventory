@@ -24,20 +24,20 @@ require_once __DIR__ . '/header.php';
 
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; min-height: 100vh; }
+    body { font-family: 'Inter', sans-serif; background: var(--color-canvas); min-height: 100vh; }
 
     .container { max-width: 600px; margin: 40px auto; padding: 0 20px; }
 
     .form-card {
-        background: white; border-radius: 15px; padding: 35px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        background: var(--color-surface); border-radius: var(--radius-lg); padding: 35px;
+        box-shadow: var(--shadow-md); border: 1px solid var(--color-border);
         animation: fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1);
     }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(30px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
     .form-header { text-align: center; margin-bottom: 30px; }
-    .form-header h2 { color: #2c3e50; font-size: 28px; margin-bottom: 10px; }
-    .form-header p  { color: #7f8c8d; font-size: 14px; }
+    .form-header h2 { color: var(--color-text-primary); font-size: 28px; margin-bottom: 10px; }
+    .form-header p  { color: var(--color-text-secondary); font-size: 14px; }
     .form-header .icon { font-size: 50px; margin-bottom: 10px; transition: transform 0.5s ease; display: block; }
     .form-card:hover .icon { transform: rotate(15deg) scale(1.1); }
 
@@ -52,21 +52,22 @@ require_once __DIR__ . '/header.php';
     @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
 
     .form-group { margin-bottom: 20px; }
-    label { display: block; margin-bottom: 8px; color: #2c3e50; font-weight: 500; font-size: 14px; }
+    label { display: block; margin-bottom: 8px; color: var(--color-text-primary); font-weight: 500; font-size: 14px; }
     label .required { color: #e74c3c; margin-left: 3px; }
 
     input, select, textarea {
         width: 100%; padding: 12px 15px;
-        border: 2px solid #e0e0e0; border-radius: 8px;
+        border: 2px solid var(--color-border); border-radius: var(--radius-sm);
+        background: var(--color-overlay); color: var(--color-text-primary);
         font-size: 14px; font-family: inherit; transition: all 0.3s ease;
     }
     input:focus, select:focus, textarea:focus {
-        outline: none; border-color: #3498db;
-        box-shadow: 0 0 0 3px rgba(52,152,219,0.1); transform: translateY(-1px);
+        outline: none; border-color: var(--color-brand);
+        box-shadow: 0 0 0 3px var(--color-brand-light); transform: translateY(-1px);
     }
 
     .btn-submit {
-        width: 100%; padding: 14px; background: #1f4f87;
+        width: 100%; padding: 14px; background: var(--color-brand);
         border: none; color: white; font-size: 16px; font-weight: 600;
         border-radius: 8px; cursor: pointer; transition: all 0.3s ease;
         margin-top: 10px; position: relative; overflow: hidden;
@@ -87,29 +88,29 @@ require_once __DIR__ . '/header.php';
         flex-direction: column; gap: 15px; backdrop-filter: blur(2px);
     }
     .spinner {
-        width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db;
+        width: 50px; height: 50px; border: 5px solid var(--color-border); border-top: 5px solid var(--color-brand);
         border-radius: 50%; animation: spin 1s linear infinite;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     #toastContainer { position: fixed; bottom: 30px; right: 30px; z-index: 10001; }
     .toast {
-        background: white; padding: 15px 25px; border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        background: var(--color-surface); padding: 15px 25px; border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg); border: 1px solid var(--color-border);
         display: flex; align-items: center; gap: 12px; margin-top: 10px;
         transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        border-left: 5px solid #27ae60;
+        border-left: 5px solid hsl(140, 60%, 45%);
     }
     .toast.show { transform: translateX(0); }
-    .toast.error { border-left-color: #e74c3c; }
+    .toast.error { border-left-color: hsl(0, 70%, 50%); }
     .toast-icon { font-size: 20px; }
 
     .info-box {
-        background: #f8f9fa; border-radius: 8px; padding: 15px;
-        margin-top: 20px; text-align: center; border: 1px solid #e0e0e0;
+        background: var(--color-overlay); border-radius: var(--radius-sm); padding: 15px;
+        margin-top: 20px; text-align: center; border: 1px solid var(--color-border);
     }
-    .info-box p { color: #7f8c8d; font-size: 13px; }
-    .info-box a { color: #3498db; text-decoration: none; font-weight: 500; }
+    .info-box p { color: var(--color-text-muted); font-size: 13px; }
+    .info-box a { color: var(--color-brand); text-decoration: none; font-weight: 500; }
     .info-box a:hover { text-decoration: underline; }
 
     @media (max-width: 768px) {
@@ -314,9 +315,7 @@ require_once __DIR__ . '/header.php';
         }, 5000);
     }
 
-    function toggleExpiry() {
-        // Expiration is now optional for all types
-    }
+    // toggleExpiry() removed — expiration is optional for all types
 
     // PHP passed status
     <?php if ($status_msg): ?>

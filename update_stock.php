@@ -20,6 +20,7 @@ if(isset($_POST['add'])){
     $new_qty = (int)$row['quantity'] + $add;
 
     $conn->query("UPDATE medicines SET quantity=$new_qty WHERE id=$id");
+    $conn->query("INSERT INTO logs (medicine_id, quantity, action) VALUES ($id, $add, 'Stock Added')");
 
     header("Location: add_stock.php?id=" . $id . "&updated=success");
     exit();

@@ -1,3 +1,15 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Redirect to login if not authenticated
+$current_page = basename($_SERVER['PHP_SELF']);
+if (!isset($_SESSION['authenticated']) && $current_page !== 'access.php') {
+    header("Location: access.php");
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -436,6 +448,8 @@
     <a href="borrowers_slip.php" class="<?php echo $current_page == 'borrowers_slip.php' ? 'active' : ''; ?>"><i data-lucide="shopping-cart" style="width: 16px; height: 16px;"></i> Borrower's Slip</a>
     <a href="logs.php" class="<?php echo $current_page == 'logs.php' ? 'active' : ''; ?>"><i data-lucide="clipboard-list" style="width: 16px; height: 16px;"></i> Logs</a>
     
+    <a href="access.php?logout=1" style="color: #e74c3c;"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Logout</a>
+
     <!-- Theme Toggler -->
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
         <i id="themeIcon" data-lucide="moon" style="width: 18px; height: 18px;"></i> <span class="hide-mobile">Dark Mode</span>

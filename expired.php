@@ -4,17 +4,11 @@ require_once __DIR__ . '/header.php';
 
 $today_date = date('Y-m-d');
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expired Batches Archive</title>
-    <style>
+<style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6f9;
+            font-family: 'Inter', sans-serif;
+            background: var(--color-canvas);
             min-height: 100vh;
         }
         .container {
@@ -23,58 +17,68 @@ $today_date = date('Y-m-d');
             padding: 0 20px;
         }
         .header-card {
-            background: white; border-radius: 15px; padding: 30px;
-            margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--color-surface);
+            border-radius: var(--radius-lg); padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
             text-align: center;
         }
         .header-card .icon { font-size: 50px; margin-bottom: 10px; }
-        .header-card h2 { color: #e74c3c; font-size: 28px; margin-bottom: 10px; }
-        .header-card p  { color: #7f8c8d; font-size: 14px; }
+        .header-card h2 { color: hsl(0, 70%, 45%); font-size: 28px; margin-bottom: 10px; }
+        .header-card p  { color: var(--color-text-secondary); font-size: 14px; }
         
         .action-bar {
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 20px;
         }
         .btn {
-            padding: 10px 20px; border: none; border-radius: 8px;
+            padding: 10px 20px; border: none; border-radius: var(--radius-sm);
             font-size: 14px; font-weight: 600; cursor: pointer;
+            font-family: 'Inter', sans-serif;
             transition: all 0.2s ease; text-decoration: none; display: inline-block;
         }
-        .btn-back { background: #95a5a6; color: white; }
-        .btn-back:hover { background: #7f8c8d; }
-        .btn-clear { background: #c0392b; color: white; }
-        .btn-clear:hover { background: #a93226; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(192,57,43,0.3); }
+        .btn-back {
+            background: var(--color-overlay); color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+        .btn-back:hover { background: var(--color-border); color: var(--color-text-primary); }
+        .btn-clear { background: hsl(0, 65%, 45%); color: white; }
+        .btn-clear:hover { background: hsl(0, 65%, 38%); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(192,57,43,0.3); }
 
         .table-container {
-            background: white; border-radius: 10px;
-            overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
         }
         table { width: 100%; border-collapse: collapse; }
         th {
-            background: #e74c3c; color: white; padding: 15px;
+            background: hsl(0, 65%, 45%); color: white; padding: 15px;
             text-align: left; font-weight: 600; font-size: 14px;
         }
-        td { padding: 12px 15px; border-bottom: 1px solid #e0e0e0; color: #2c3e50; font-size: 14px; }
-        tr:hover { background: #fdf2f2; }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary); font-size: 14px; }
+        tr:hover { background: var(--color-overlay); }
         
-        .no-data { text-align: center; padding: 60px; color: #7f8c8d; }
+        .no-data { text-align: center; padding: 60px; color: var(--color-text-muted); }
         .no-data .icon { font-size: 48px; margin-bottom: 15px; }
         
         /* Modal */
         #loadingOverlay {
             display: none; position: fixed; inset: 0;
-            background: rgba(255,255,255,0.7); z-index: 9999;
+            background: rgba(0,0,0,0.4); z-index: 9999;
             align-items: center; justify-content: center; backdrop-filter: blur(2px);
         }
         .spinner {
-            width: 40px; height: 40px; border: 4px solid #f3f3f3;
-            border-top: 4px solid #e74c3c; border-radius: 50%;
+            width: 40px; height: 40px;
+            border: 4px solid var(--color-border);
+            border-top: 4px solid hsl(0, 65%, 45%);
+            border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-</head>
-<body>
 
 <div id="loadingOverlay"><div class="spinner"></div></div>
 

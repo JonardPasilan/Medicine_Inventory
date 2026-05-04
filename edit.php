@@ -34,18 +34,19 @@ require_once __DIR__ . '/header.php';
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6f9;
+            font-family: 'Inter', sans-serif;
+            background: var(--color-canvas);
             min-height: 100vh;
         }
 
         .container { max-width: 600px; margin: 40px auto; padding: 0 20px; }
 
         .form-card {
-            background: white;
-            border-radius: 15px;
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
             padding: 35px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
             animation: fadeIn 0.5s ease;
         }
         @keyframes fadeIn {
@@ -55,12 +56,12 @@ require_once __DIR__ . '/header.php';
 
         .form-header { text-align: center; margin-bottom: 30px; }
         .form-header .icon { font-size: 50px; margin-bottom: 10px; }
-        .form-header h2 { color: #2c3e50; font-size: 28px; margin-bottom: 8px; }
-        .form-header p  { color: #7f8c8d; font-size: 14px; }
+        .form-header h2 { color: var(--color-text-primary); font-size: 28px; margin-bottom: 8px; }
+        .form-header p  { color: var(--color-text-secondary); font-size: 14px; }
 
         .batch-id-badge {
             display: inline-block;
-            background: #1f4f87;
+            background: var(--color-brand);
             color: white;
             font-size: 12px;
             font-weight: 700;
@@ -70,40 +71,41 @@ require_once __DIR__ . '/header.php';
         }
 
         .medicine-preview {
-            background: #eef2f7;
-            border-radius: 10px;
+            background: var(--color-overlay);
+            border-radius: var(--radius-sm);
             padding: 15px;
             margin-bottom: 25px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--color-border);
         }
         .preview-item {
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--color-border);
             font-size: 14px;
         }
         .preview-item:last-child { border-bottom: none; }
-        .preview-label { font-weight: 600; color: #2c3e50; }
-        .preview-value { color: #7f8c8d; }
+        .preview-label { font-weight: 600; color: var(--color-text-primary); }
+        .preview-value { color: var(--color-text-secondary); }
 
         .form-group { margin-bottom: 20px; }
 
         label {
             display: block; margin-bottom: 8px;
-            color: #2c3e50; font-weight: 500; font-size: 14px;
+            color: var(--color-text-primary); font-weight: 500; font-size: 14px;
         }
         label .required { color: #e74c3c; margin-left: 3px; }
 
         input, select, textarea {
             width: 100%; padding: 12px 15px;
-            border: 2px solid #e0e0e0; border-radius: 8px;
+            border: 2px solid var(--color-border); border-radius: var(--radius-sm);
+            background: var(--color-overlay); color: var(--color-text-primary);
             font-size: 14px; font-family: inherit;
             transition: all 0.3s ease;
         }
         input:focus, select:focus, textarea:focus {
-            outline: none; border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+            outline: none; border-color: var(--color-brand);
+            box-shadow: 0 0 0 3px var(--color-brand-light);
         }
 
         .button-group { display: flex; gap: 15px; margin-top: 10px; }
@@ -123,13 +125,13 @@ require_once __DIR__ . '/header.php';
 
         .btn-cancel {
             flex: 1; padding: 14px;
-            background: #95a5a6; border: none;
-            color: white; font-size: 16px; font-weight: 600;
-            border-radius: 8px; cursor: pointer;
+            background: var(--color-overlay); border: 1px solid var(--color-border);
+            color: var(--color-text-secondary); font-size: 16px; font-weight: 600;
+            border-radius: var(--radius-sm); cursor: pointer;
             text-decoration: none; text-align: center;
             transition: all 0.3s ease;
         }
-        .btn-cancel:hover { background: #7f8c8d; transform: translateY(-2px); }
+        .btn-cancel:hover { background: var(--color-border); color: var(--color-text-primary); transform: translateY(-2px); }
 
         @media (max-width: 768px) {
             .container { margin: 20px auto; }
@@ -248,11 +250,7 @@ require_once __DIR__ . '/header.php';
     });
     form.addEventListener('submit', () => { formChanged = false; });
 
-    function updateRequiredFields() {
-        // Description and expiration are optional
-    }
-
-    // Initial check
+    // updateRequiredFields() removed — description and expiration are optional
     document.addEventListener('DOMContentLoaded', () => {
         flatpickr("input[type=date]", {
             altInput: true,
@@ -260,7 +258,6 @@ require_once __DIR__ . '/header.php';
             dateFormat: "Y-m-d",
             allowInput: true
         });
-        updateRequiredFields();
     });
 </script>
 
