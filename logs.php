@@ -1,7 +1,14 @@
 <?php
 require_once __DIR__ . '/db.php';
 
-// Delete logs functionality removed for audit trail integrity
+// Log Cleanup Logic
+if (isset($_POST['clear_old_logs'])) {
+    $six_months_ago = date('Y-m-d H:i:s', strtotime('-6 months'));
+    $conn->query("DELETE FROM logs WHERE date < '$six_months_ago'");
+    $deleted_count = $conn->affected_rows;
+    header("Location: logs.php?cleaned=$deleted_count");
+    exit();
+}
 
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     $where_clause = "1=1";
@@ -233,6 +240,16 @@ require_once __DIR__ . '/header.php';
         }
         .btn-export:hover { background: hsl(140, 60%, 33%); transform: translateY(-2px); }
 
+        .btn-clear-logs {
+            padding: 10px 20px; background: transparent;
+            color: hsl(0, 70%, 50%); border: 1px solid hsl(0, 70%, 50%);
+            border-radius: var(--radius-sm);
+            cursor: pointer; font-size: 14px; font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+        .btn-clear-logs:hover { background: hsl(0, 70%, 50%); color: white; transform: translateY(-2px); }
+
         @media (max-width: 768px) {
             .container { margin: 20px auto; }
             .filter-group { min-width: 100%; }
@@ -321,9 +338,18 @@ require_once __DIR__ . '/header.php';
                     <button type="submit" name="filter" value="1" class="btn-filter">Apply Filter</button>
                     <a href="logs.php" class="btn-reset" style="text-decoration:none; display:inline-block; text-align:center;">Reset</a>
                 </div>
-                <button type="submit" name="export" value="csv" class="btn-export">📊 Export to CSV</button>
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" name="export" value="csv" class="btn-export">📊 Export to CSV</button>
+                    <button type="button" onclick="confirmLogCleanup()" class="btn-clear-logs">🧹 Clean Up (6mo+)</button>
+                </div>
             </div>
         </form>
+
+        <?php if (isset($_GET['cleaned'])): ?>
+            <div style="background: var(--color-brand-light); color: var(--color-brand); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; text-align: center; border: 1px solid var(--color-brand);">
+                ✨ Successfully cleaned up <strong><?php echo (int)$_GET['cleaned']; ?></strong> old log entries.
+            </div>
+        <?php endif; ?>
     </div>
 
         <div class="table-container">
@@ -516,7 +542,38 @@ require_once __DIR__ . '/header.php';
 
 </div>
 
+<script>
+    function confirmLogCleanup() {
+        const modal = document.getElementById('customModal');
+        const title = document.getElementById('modalTitle');
+        const msg = document.getElementById('modalMessage');
+        const confirmBtn = document.getElementById('modalConfirm');
+        const cancelBtn = document.getElementById('modalCancel');
 
+        title.innerText = "Clean Up Old Logs?";
+        msg.innerHTML = "This will permanently delete all log entries <strong>older than 6 months</strong>. This action cannot be undone. Proceed?";
+        
+        modal.style.display = "flex";
 
+        const cleanupForm = document.createElement('form');
+        cleanupForm.method = 'POST';
+        cleanupForm.style.display = 'none';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'clear_old_logs';
+        input.value = '1';
+        cleanupForm.appendChild(input);
+        document.body.appendChild(cleanupForm);
+
+        confirmBtn.onclick = function() {
+            cleanupForm.submit();
+        };
+
+        cancelBtn.onclick = function() {
+            modal.style.display = "none";
+            document.body.removeChild(cleanupForm);
+        };
+    }
+</script>
 </body>
 </html>

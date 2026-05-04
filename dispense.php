@@ -27,7 +27,7 @@ if (isset($_POST['use'])) {
             SELECT SUM(quantity) AS avail
             FROM medicines
             WHERE name = '$med_name'
-              AND expiration_date >= CURDATE()
+              AND (expiration_date >= CURDATE() OR expiration_date IS NULL)
               AND quantity > 0
               AND type IN ('medicine', 'consumable')");
         $avail = (int)($chk ? $chk->fetch_assoc()['avail'] : 0);
@@ -40,7 +40,7 @@ if (isset($_POST['use'])) {
                 SELECT *
                 FROM medicines
                 WHERE name = '$med_name'
-                  AND expiration_date >= CURDATE()
+                  AND (expiration_date >= CURDATE() OR expiration_date IS NULL)
                   AND quantity > 0
                   AND type IN ('medicine', 'consumable')
                 ORDER BY expiration_date ASC");
@@ -78,9 +78,9 @@ $meds_query = $conn->query("
     SELECT
         name,
         label,
-        SUM(CASE WHEN expiration_date >= CURDATE() THEN quantity ELSE 0 END) AS avail_qty,
+        SUM(CASE WHEN expiration_date >= CURDATE() OR expiration_date IS NULL THEN quantity ELSE 0 END) AS avail_qty,
         SUM(CASE WHEN expiration_date <  CURDATE() THEN quantity ELSE 0 END) AS expired_qty,
-        MIN(CASE WHEN expiration_date >= CURDATE() AND quantity > 0
+        MIN(CASE WHEN (expiration_date >= CURDATE() OR expiration_date IS NULL) AND quantity > 0
                  THEN expiration_date ELSE NULL END)                          AS next_exp
     FROM medicines
     WHERE quantity > 0

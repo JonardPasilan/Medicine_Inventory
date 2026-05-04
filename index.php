@@ -10,6 +10,10 @@ $filter = isset($_GET['filter']) ? $_GET['filter'] : '';
 $today_date = date('Y-m-d');
 $soon_date  = date('Y-m-d', strtotime('+30 days'));
 
+// Maintenance: Run auto-archive ONLY on dashboard load
+$conn->query("UPDATE medicines SET is_archived = 1 WHERE type IN ('medicine', 'consumable') AND (quantity <= 0 OR (expiration_date IS NOT NULL AND expiration_date < '$today_date'))");
+$conn->query("UPDATE medicines SET is_archived = 0 WHERE type IN ('dental', 'medical')");
+
 $low_stock_q = $conn->query("SELECT COUNT(*) as c FROM (SELECT name, label, SUM(quantity) as tq FROM medicines WHERE is_archived = 0 AND type IN ('medicine', 'consumable') GROUP BY name, label HAVING tq <= 5) as sub");
 $low_stock_count = $low_stock_q ? $low_stock_q->fetch_assoc()['c'] : 0;
 

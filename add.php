@@ -150,8 +150,8 @@ require_once __DIR__ . '/header.php';
         $status_msg  = '';
         $status_type = 'success';
         if (isset($_POST['add'])) {
-            $n = mysqli_real_escape_string($conn, trim($_POST['name']        ?? ''));
-            $l = mysqli_real_escape_string($conn, trim($_POST['Description'] ?? ''));
+            $n = mysqli_real_escape_string($conn, trim($_POST['name']  ?? ''));
+            $l = mysqli_real_escape_string($conn, trim($_POST['label'] ?? ''));
             $t = mysqli_real_escape_string($conn, trim($_POST['type']        ?? 'medicine'));
             $c = mysqli_real_escape_string($conn, trim($_POST['category']    ?? 'General'));
             $u = mysqli_real_escape_string($conn, trim($_POST['unit']        ?? 'pcs'));
@@ -214,7 +214,7 @@ require_once __DIR__ . '/header.php';
             <!-- Description -->
             <div class="form-group">
                 <label>Description (Optional)</label>
-                <input type="text" name="Description" id="descInput"
+                <input type="text" name="label" id="descInput"
                        value="<?php echo $prefill_label; ?>"
                        placeholder="e.g., 500mg tablet, 100pcs/box">
             </div>
