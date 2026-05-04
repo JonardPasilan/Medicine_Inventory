@@ -150,10 +150,14 @@
             border: none;
             font-family: 'Inter', sans-serif;
         }
-        .nav a:hover, .theme-toggle:hover {
+        .nav a:hover {
             background: var(--color-overlay);
             color: var(--color-text-primary);
             transform: translateY(-1px);
+        }
+        .theme-toggle:hover {
+            background: var(--color-border);
+            color: var(--color-text-primary);
         }
         .nav a.active {
             background: var(--color-brand-light);
