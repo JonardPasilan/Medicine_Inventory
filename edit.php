@@ -213,8 +213,8 @@ require_once __DIR__ . '/header.php';
             </div>
 
             <div class="form-group">
-                <label>Description <span class="required" id="descReq" style="<?php echo ($row['type'] == 'medicine' || $row['type'] == 'consumable') ? '' : 'display:none;'; ?>">*</span></label>
-                <input type="text" name="label" id="descInput" value="<?php echo htmlspecialchars((string)$row['label']); ?>" <?php echo ($row['type'] == 'medicine' || $row['type'] == 'consumable') ? 'required' : ''; ?>>
+                <label>Description (Optional)</label>
+                <input type="text" name="label" id="descInput" value="<?php echo htmlspecialchars((string)$row['label']); ?>">
             </div>
 
             <div class="form-group">
@@ -223,9 +223,9 @@ require_once __DIR__ . '/header.php';
             </div>
 
             <div class="form-group" id="expGroup">
-                <label>Expiration Date <span class="required" id="expReq" style="<?php echo $row['type'] == 'medicine' ? '' : 'display:none;'; ?>">*</span></label>
-                <input type="date" name="exp" id="expDate" value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>" <?php echo $row['type'] == 'medicine' ? 'required' : ''; ?>>
-                <small style="color:#7f8c8d; display:block; margin-top:5px;">(Optional for consumables)</small>
+                <label>Expiration Date (Optional)</label>
+                <input type="date" name="exp" id="expDate" value="<?php echo htmlspecialchars((string)$row['expiration_date']); ?>">
+                <small style="color:#7f8c8d; display:block; margin-top:5px;">(Leave blank if not applicable)</small>
             </div>
 
             <div class="button-group">
@@ -249,32 +249,7 @@ require_once __DIR__ . '/header.php';
     form.addEventListener('submit', () => { formChanged = false; });
 
     function updateRequiredFields() {
-        const type     = document.getElementById('typeSelect').value;
-        const expInput = document.getElementById('expDate');
-        const expStar  = document.getElementById('expReq');
-        const catInput = document.querySelector('input[name="category"]');
-        const descInput = document.getElementById('descInput');
-        const descStar  = document.getElementById('descReq');
-
-        if (type === 'medicine') {
-            if (expInput._flatpickr && expInput._flatpickr.altInput) {
-                expInput.required = false;
-                expInput._flatpickr.altInput.required = true;
-            } else {
-                expInput.required = true;
-            }
-            expStar.style.display = 'inline';
-        } else {
-            if (expInput._flatpickr && expInput._flatpickr.altInput) {
-                expInput._flatpickr.altInput.required = false;
-            }
-            expInput.required = false;
-            expStar.style.display = 'none';
-        }
-
-        descInput.required = true;
-        descStar.style.display = 'inline';
-        catInput.required = true;
+        // Description and expiration are optional
     }
 
     // Initial check

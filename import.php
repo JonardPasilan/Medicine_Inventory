@@ -34,7 +34,7 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
                     $exp      = trim($data[6] ?? '');
 
                     // Validation
-                    if (empty($name) || empty($label) || $qty < 0) {
+                    if (empty($name) || $qty < 0) {
                         $error_count++;
                         continue;
                     }
@@ -42,11 +42,6 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
                         $type = 'medicine';
                     }
                     $val_exp = (!empty($exp) && strtotime($exp)) ? "'" . $conn->real_escape_string($exp) . "'" : "NULL";
-                    
-                    if ($type === 'medicine' && $val_exp === "NULL") {
-                        $error_count++; // skip medicines without expiry
-                        continue;
-                    }
 
                     // Determine batch number
                     $bn_res = $conn->query("SELECT MAX(batch_number) AS max_bn FROM medicines WHERE name = '$name' AND label = '$label' AND type = '$type'");

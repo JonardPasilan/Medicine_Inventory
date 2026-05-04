@@ -159,9 +159,7 @@ require_once __DIR__ . '/header.php';
 
             $errors = [];
             if (empty($n)) $errors[] = "Name is required.";
-            if (empty($l)) $errors[] = "Description is required.";
             if ($q < 0)   $errors[] = "Quantity cannot be negative.";
-            if ($t === 'medicine' && empty($e)) $errors[] = "Expiration date is required for medicines.";
 
             if (empty($errors)) {
                 $bn_res  = $conn->query("SELECT MAX(batch_number) AS max_bn FROM medicines WHERE name = '$n' AND label = '$l' AND type = '$t'");
@@ -214,10 +212,10 @@ require_once __DIR__ . '/header.php';
 
             <!-- Description -->
             <div class="form-group">
-                <label>Description <span class="required">*</span></label>
+                <label>Description (Optional)</label>
                 <input type="text" name="Description" id="descInput"
                        value="<?php echo $prefill_label; ?>"
-                       placeholder="e.g., 500mg tablet, 100pcs/box" required>
+                       placeholder="e.g., 500mg tablet, 100pcs/box">
             </div>
 
             <!-- Category & Unit -->
@@ -268,11 +266,9 @@ require_once __DIR__ . '/header.php';
 
             <!-- Expiration Date -->
             <div class="form-group" id="expGroup">
-                <label>Expiration Date
-                    <span class="required" id="expReq" style="<?php echo $prefill_type == 'medicine' ? '' : 'display:none;'; ?>">*</span>
-                </label>
-                <input type="date" name="exp" id="expDate" <?php echo $prefill_type == 'medicine' ? 'required' : ''; ?>>
-                <small style="color:#7f8c8d; display:block; margin-top:5px;">(Optional for consumables)</small>
+                <label>Expiration Date (Optional)</label>
+                <input type="date" name="exp" id="expDate">
+                <small style="color:#7f8c8d; display:block; margin-top:5px;">(Leave blank if not applicable)</small>
             </div>
 
             <button type="submit" name="add" class="btn-submit">
@@ -319,25 +315,7 @@ require_once __DIR__ . '/header.php';
     }
 
     function toggleExpiry() {
-        const type    = document.getElementById('typeSelect').value;
-        const expInput = document.getElementById('expDate');
-        const expStar  = document.getElementById('expReq');
-
-        if (type === 'medicine') {
-            expStar.style.display = 'inline';
-            if (expInput._flatpickr && expInput._flatpickr.altInput) {
-                expInput._flatpickr.altInput.required = true;
-                expInput.required = false;
-            } else {
-                expInput.required = true;
-            }
-        } else {
-            expStar.style.display = 'none';
-            if (expInput._flatpickr && expInput._flatpickr.altInput) {
-                expInput._flatpickr.altInput.required = false;
-            }
-            expInput.required = false;
-        }
+        // Expiration is now optional for all types
     }
 
     // PHP passed status
