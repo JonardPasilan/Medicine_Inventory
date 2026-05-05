@@ -348,7 +348,7 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
                 Paracetamol, 500mg, Tablet, pcs, 100, 2026-12-31<br>
                 Amoxicillin, 250mg, Capsule, pcs, 50, 2025-06-30
             </div>
-            <a href="sample.csv" download class="download-link">⬇️ Download Sample CSV</a>
+            <a href="Sample%20med.csv" download class="download-link">⬇️ Download Sample med CSV</a>
         </div>
 
         <!-- Instructions: Consumable -->
@@ -364,7 +364,7 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
                 Alcohol, 70% Isopropyl, General, bottle, 50,<br>
                 Cotton Balls, Sterile, Supplies, pack, 30, 2027-01-01
             </div>
-            <a href="sample_consumable.csv" download class="download-link">⬇️ Download Consumable Sample CSV</a>
+            <a href="sample%20consumable.csv" download class="download-link">⬇️ Download sample consumable CSV</a>
         </div>
 
         <!-- Instructions: Equipment -->
@@ -379,7 +379,7 @@ if (isset($_POST['import']) && isset($_FILES['csv_file'])) {
                 Item Name, Unit, Brand/Serial, RIS/ICS/PAR, Color, Date Procured, Qty Serviceable, Qty Unserviceable, Qty Repair, Remarks<br>
                 Dental Chair, Unit, SN-1234, RIS-2023-01, White, 2023-01-15, 1, 0, 0, Good condition
             </div>
-            <a href="sample_dental.csv" id="downloadSampleBtn" download class="download-link">⬇️ Download Dental Sample CSV</a>
+            <a href="sample%20dental.csv" id="downloadSampleBtn" download class="download-link">⬇️ Download sample dental CSV</a>
         </div>
     </div>
 </div>
