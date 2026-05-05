@@ -543,36 +543,24 @@ require_once __DIR__ . '/header.php';
 </div>
 
 <script>
-    function confirmLogCleanup() {
-        const modal = document.getElementById('customModal');
-        const title = document.getElementById('modalTitle');
-        const msg = document.getElementById('modalMessage');
-        const confirmBtn = document.getElementById('modalConfirm');
-        const cancelBtn = document.getElementById('modalCancel');
+    async function confirmLogCleanup() {
+        const confirmed = await showConfirm(
+            "Clean Up Old Logs?",
+            "This will permanently delete all log entries <strong>older than 6 months</strong>. This action cannot be undone. Proceed?"
+        );
 
-        title.innerText = "Clean Up Old Logs?";
-        msg.innerHTML = "This will permanently delete all log entries <strong>older than 6 months</strong>. This action cannot be undone. Proceed?";
-        
-        modal.style.display = "flex";
-
-        const cleanupForm = document.createElement('form');
-        cleanupForm.method = 'POST';
-        cleanupForm.style.display = 'none';
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'clear_old_logs';
-        input.value = '1';
-        cleanupForm.appendChild(input);
-        document.body.appendChild(cleanupForm);
-
-        confirmBtn.onclick = function() {
+        if (confirmed) {
+            const cleanupForm = document.createElement('form');
+            cleanupForm.method = 'POST';
+            cleanupForm.style.display = 'none';
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'clear_old_logs';
+            input.value = '1';
+            cleanupForm.appendChild(input);
+            document.body.appendChild(cleanupForm);
             cleanupForm.submit();
-        };
-
-        cancelBtn.onclick = function() {
-            modal.style.display = "none";
-            document.body.removeChild(cleanupForm);
-        };
+        }
     }
 </script>
 </body>

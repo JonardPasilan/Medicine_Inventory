@@ -361,7 +361,7 @@ if (!isset($_SESSION['authenticated']) && $current_page !== 'access.php') {
                 const iconEl = document.getElementById('modalIcon');
 
                 titleEl.innerText = title || "Confirm Action";
-                messageEl.innerText = message || "Are you sure you want to proceed?";
+                messageEl.innerHTML = message || "Are you sure you want to proceed?";
                 cancelBtn.style.display = "block";
                 confirmBtn.className = "modal-btn modal-btn-confirm";
                 confirmBtn.innerText = "Confirm";
@@ -384,7 +384,7 @@ if (!isset($_SESSION['authenticated']) && $current_page !== 'access.php') {
                 const iconEl = document.getElementById('modalIcon');
 
                 titleEl.innerText = title || "Notification";
-                messageEl.innerText = message;
+                messageEl.innerHTML = message;
                 cancelBtn.style.display = "none";
                 confirmBtn.className = "modal-btn modal-btn-alert";
                 confirmBtn.innerText = "OK";
