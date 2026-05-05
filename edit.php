@@ -133,6 +133,37 @@ require_once __DIR__ . '/header.php';
         }
         .btn-cancel:hover { background: var(--color-border); color: var(--color-text-primary); transform: translateY(-2px); }
 
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); display: flex;
+            align-items: center; justify-content: center; z-index: 1000;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content {
+            background: var(--color-surface); padding: 30px;
+            border-radius: var(--radius-lg); width: 90%; max-width: 400px;
+            text-align: center; box-shadow: var(--shadow-lg);
+            transform: translateY(-20px); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-content h3 { margin-bottom: 15px; color: var(--color-text-primary); font-size: 22px; }
+        .modal-content p { margin-bottom: 25px; color: var(--color-text-secondary); font-size: 15px; line-height: 1.5; }
+        .modal-buttons { display: flex; gap: 15px; justify-content: center; }
+        .btn-danger {
+            padding: 12px 24px; background: #e74c3c; color: white;
+            border: none; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-danger:hover { background: #c0392b; transform: translateY(-2px); }
+        .btn-secondary {
+            padding: 12px 24px; background: var(--color-overlay); color: var(--color-text-primary);
+            border: 1px solid var(--color-border); border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover { background: var(--color-border); transform: translateY(-2px); }
+
         @media (max-width: 768px) {
             .container { margin: 20px auto; }
             .form-card { padding: 25px; }
@@ -238,20 +269,65 @@ require_once __DIR__ . '/header.php';
     </div>
 </div>
 
+<!-- Leave Modal -->
+<div id="leaveModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Unsaved Changes</h3>
+        <p>You have unsaved changes. Are you sure you want to leave this page without saving?</p>
+        <div class="modal-buttons">
+            <button type="button" id="btnStay" class="btn-secondary">Stay</button>
+            <button type="button" id="btnLeave" class="btn-danger">Leave</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let formChanged = false;
-    const form = document.getElementById('editForm');
-    form.querySelectorAll('input, select').forEach(inp => inp.addEventListener('change', () => { formChanged = true; }));
-    window.addEventListener('beforeunload', function(e) {
-        if (formChanged) {
-            e.preventDefault();
-            e.returnValue = 'You have unsaved changes.';
-        }
-    });
-    form.addEventListener('submit', () => { formChanged = false; });
+    let pendingUrl = '';
 
     // updateRequiredFields() removed — description and expiration are optional
     document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('editForm');
+        const leaveModal = document.getElementById('leaveModal');
+        const btnStay = document.getElementById('btnStay');
+        const btnLeave = document.getElementById('btnLeave');
+
+        if (form) {
+            // Track changes
+            form.querySelectorAll('input, select').forEach(inp => {
+                inp.addEventListener('change', () => { formChanged = true; });
+                inp.addEventListener('input', () => { formChanged = true; });
+            });
+            
+            form.addEventListener('submit', () => { formChanged = false; });
+        }
+        
+        // Intercept clicks on links
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (formChanged && !this.hasAttribute('target') && this.href && !this.href.startsWith('javascript:')) {
+                    e.preventDefault();
+                    pendingUrl = this.href;
+                    leaveModal.classList.add('active');
+                }
+            });
+        });
+
+        if (btnStay) {
+            btnStay.addEventListener('click', () => {
+                leaveModal.classList.remove('active');
+                pendingUrl = '';
+            });
+        }
+
+        if (btnLeave) {
+            btnLeave.addEventListener('click', () => {
+                if (pendingUrl) {
+                    window.location.href = pendingUrl;
+                }
+            });
+        }
+
         flatpickr("input[type=date]", {
             altInput: true,
             altFormat: "m/d/Y",

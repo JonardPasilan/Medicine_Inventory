@@ -10,9 +10,15 @@ $filter = isset($_GET['filter']) ? $_GET['filter'] : '';
 $today_date = date('Y-m-d');
 $soon_date  = date('Y-m-d', strtotime('+30 days'));
 
-// Maintenance: Run auto-archive ONLY on dashboard load
-$conn->query("UPDATE medicines SET is_archived = 1 WHERE type IN ('medicine', 'consumable') AND (quantity <= 0 OR (expiration_date IS NOT NULL AND expiration_date < '$today_date'))");
-$conn->query("UPDATE medicines SET is_archived = 0 WHERE type IN ('dental', 'medical')");
+// Maintenance: Run auto-archive only once per day
+$archive_flag_file = __DIR__ . '/_archive_timestamp.txt';
+$last_run = file_exists($archive_flag_file) ? trim(file_get_contents($archive_flag_file)) : '';
+
+if ($last_run !== $today_date) {
+    $conn->query("UPDATE medicines SET is_archived = 1 WHERE type IN ('medicine', 'consumable') AND (quantity <= 0 OR (expiration_date IS NOT NULL AND expiration_date < '$today_date'))");
+    $conn->query("UPDATE medicines SET is_archived = 0 WHERE type IN ('dental', 'medical')");
+    file_put_contents($archive_flag_file, $today_date);
+}
 
 $low_stock_q = $conn->query("SELECT COUNT(*) as c FROM (SELECT name, label, SUM(quantity) as tq FROM medicines WHERE is_archived = 0 AND type IN ('medicine', 'consumable') GROUP BY name, label HAVING tq <= 5) as sub");
 $low_stock_count = $low_stock_q ? $low_stock_q->fetch_assoc()['c'] : 0;
@@ -344,6 +350,7 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         <table>
             <thead>
                 <tr>
+                    <th>No.</th>
                     <th>Medicine Name</th>
                     <th>Category</th>
                     <th>Description</th>
@@ -364,6 +371,7 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         <table>
             <thead>
                 <tr>
+                    <th>No.</th>
                     <th>Item Name</th>
                     <th>Category</th>
                     <th>Description</th>
@@ -551,6 +559,7 @@ function renderInventoryTable($conn, $type, $search, $filter = '') {
             $row_style = $is_exp ? "background:hsl(0, 100%, 99%);" : "";
             
             echo "<tr class='group-row' onclick='toggleBatch(\"$gid\")' style='$row_style'>
+                    <td>$i</td>
                     <td>
                         <strong style='color:var(--color-text-primary);'>$gname</strong> <span class='toggle-icon' id='icon_$gid'><i data-lucide='chevron-down' style='width:14px;height:14px;'></i></span><br>
                         <small style='color:var(--color-text-muted); font-size:var(--text-xs);'>$batch_cnt batch(es)</small>
@@ -577,7 +586,7 @@ function renderInventoryTable($conn, $type, $search, $filter = '') {
                 
                 $bunit = htmlspecialchars($b['unit'] ?? 'pcs');
                 echo "<tr class='batch-detail-row' data-grp='$gid' id='row_$bid' style='display:none; $b_bg'>
-                        <td colspan='7' style='padding:0;'>
+                        <td colspan='8' style='padding:0;'>
                             <div class='batch-anim-wrapper'>
                                 <div style='display:flex; justify-content:space-between; align-items:center;'>
                                     <div style='display:flex; align-items:center; gap:6px;'><i data-lucide='package' style='width:14px;height:14px;color:var(--color-text-muted);'></i> Batch #{$b['batch_number']} <small style='color:var(--color-text-muted); margin-left:10px;'>Exp: " . ($b['expiration_date'] ? date('M d, Y', strtotime($b['expiration_date'])) : 'N/A') . "</small></div>
@@ -593,7 +602,7 @@ function renderInventoryTable($conn, $type, $search, $filter = '') {
             }
         }
     } else {
-        echo "<tr><td colspan='7' class='no-data'>No records found.</td></tr>";
+        echo "<tr><td colspan='8' class='no-data'>No records found.</td></tr>";
     }
 }
 ?>
