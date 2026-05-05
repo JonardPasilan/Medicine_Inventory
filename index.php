@@ -95,7 +95,7 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             margin-bottom: 20px;
             box-shadow: var(--shadow-sm);
         }
-        .search-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .search-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; max-width: 600px; margin: 0 auto; }
         .search-form input {
             flex: 1;
             padding: 10px 15px;
@@ -327,11 +327,11 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             <?php endif; ?>
         </form>
         <?php if ($filter === 'low'): ?>
-            <div style="margin-top: 10px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; gap: 5px;">
+            <div style="margin-top: 10px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;">
                 <i data-lucide="filter" style="width:12px; height:12px;"></i> Showing Low Stock Items Only (Total Qty ≤ 5)
             </div>
         <?php elseif ($filter === 'soon'): ?>
-            <div style="margin-top: 10px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; gap: 5px;">
+            <div style="margin-top: 10px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;">
                 <i data-lucide="filter" style="width:12px; height:12px;"></i> Showing Items Expiring Soon (Within 30 Days)
             </div>
         <?php endif; ?>

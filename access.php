@@ -157,7 +157,7 @@ if (isset($_GET['logout'])) {
         </form>
         
         <div style="margin-top: 20px; font-size: 12px; color: var(--color-text-secondary);">
-            Clinic Inventory Management System v2.0
+            Clinic Inventory Management System
         </div>
     </div>
 
