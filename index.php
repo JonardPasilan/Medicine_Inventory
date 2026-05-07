@@ -134,23 +134,30 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         }
         .tab-btn {
             padding: 10px 20px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            background: var(--color-brand);
+            border: 1px solid var(--color-brand-light);
             border-radius: var(--radius-sm);
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 700;
             font-size: var(--text-sm);
-            color: var(--color-text-secondary);
+            color: white;
             display: flex;
             align-items: center;
             gap: 8px;
+            box-shadow: var(--shadow-sm);
+            text-shadow: none;
         }
-        .tab-btn:hover { background: var(--color-overlay); color: var(--color-text-primary); }
+        .tab-btn:hover { 
+            background: var(--color-brand-dark); 
+            box-shadow: var(--shadow-sm);
+        }
         .tab-btn.active {
-            background: var(--color-brand-light);
-            border-color: var(--color-brand-dark);
-            color: var(--color-brand-dark);
-            font-weight: 600;
+            background: white;
+            border-color: var(--color-brand);
+            color: var(--color-brand);
+            font-weight: 800;
+            box-shadow: var(--shadow-sm);
+            text-shadow: none;
         }
 
         .table-container {
@@ -229,8 +236,21 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         .btn-delete { background: hsl(0, 100%, 97%); border: 1px solid hsl(0, 70%, 80%); color: hsl(0, 70%, 40%); }
         .btn-delete:hover { background: hsl(0, 100%, 95%); color: hsl(0, 70%, 35%); border-color: hsl(0, 70%, 70%); box-shadow: var(--shadow-xs); }
         
-        .btn-stock  { background: var(--color-brand); color: white; border: 1px solid var(--color-brand-dark); }
-        .btn-stock:hover { background: var(--color-brand-dark); box-shadow: var(--shadow-xs); }
+        [data-theme="dark"] .btn-delete { background: hsl(0, 50%, 20%); border-color: hsl(0, 50%, 35%); color: hsl(0, 100%, 75%); }
+        [data-theme="dark"] .btn-delete:hover { background: hsl(0, 50%, 25%); border-color: hsl(0, 50%, 45%); color: hsl(0, 100%, 85%); }
+        
+        .btn-stock  { 
+            background: var(--color-brand); 
+            color: white; 
+            border: 1px solid var(--color-brand-light);
+            font-weight: 700;
+            box-shadow: var(--shadow-sm);
+            text-shadow: none;
+        }
+        .btn-stock:hover { 
+            background: var(--color-brand-dark); 
+            box-shadow: var(--shadow-sm);
+        }
 
         #loadingOverlay {
             display: none;

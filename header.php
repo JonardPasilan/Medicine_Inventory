@@ -23,10 +23,9 @@ if (!isset($_SESSION['authenticated']) && $current_page !== 'access.php') {
    DESIGN TOKENS — Edit here to restyle the entire product.
    ============================================================ */
 :root {
-  /* Brand (10% accent) */
-  --color-brand:       hsl(245, 78%, 58%);   /* Primary CTA, active states */
-  --color-brand-light: hsl(245, 78%, 96%);   /* Brand tint for backgrounds */
-  --color-brand-dark:  hsl(245, 78%, 42%);   /* Brand hover / pressed states */
+  --color-brand:       hsl(210, 100%, 40%);   /* Primary CTA, accessible blue */
+  --color-brand-light: hsl(210, 100%, 94%);   /* Brand tint */
+  --color-brand-dark:  hsl(210, 100%, 30%);   /* Brand hover */
 
   /* Surfaces (60% canvas, 30% secondary) */
   --color-canvas:   hsl(40, 20%, 98%);       /* Page background (60%) */
@@ -74,7 +73,7 @@ if (!isset($_SESSION['authenticated']) && $current_page !== 'access.php') {
 
 /* DARK MODE OVERRIDES */
 :root[data-theme="dark"] {
-  --color-brand-light: hsl(245, 60%, 20%);
+  --color-brand-light: hsl(210, 60%, 20%);
   --color-canvas:   hsl(220, 20%, 10%);
   --color-surface:  hsl(220, 20%, 15%);
   --color-overlay:  hsl(220, 20%, 22%);
@@ -111,26 +110,15 @@ if (!isset($_SESSION['authenticated']) && $current_page !== 'access.php') {
 [data-theme="dark"] tr:hover { background: var(--color-overlay) !important; }
 [data-theme="dark"] .topbar { background: hsl(220, 20%, 8%) !important; border-bottom: 1px solid var(--color-border); }
 
-/* Dark Mode Neon Glow Effects for Buttons */
-[data-theme="dark"] .nav a:hover,
-[data-theme="dark"] .theme-toggle:hover,
-[data-theme="dark"] .tab-btn:hover,
-[data-theme="dark"] .btn:hover,
-[data-theme="dark"] .modal-btn:hover,
-[data-theme="dark"] .search-form button:hover {
-    box-shadow: 0 0 8px var(--color-brand), 0 0 16px var(--color-brand) !important;
-    border-color: var(--color-brand) !important;
+/* Dark Mode Overrides for Buttons */
+[data-theme="dark"] .nav a,
+[data-theme="dark"] .tab-btn,
+[data-theme="dark"] .modal-btn {
     color: #ffffff !important;
-    text-shadow: 0 0 3px rgba(255, 255, 255, 0.5) !important;
 }
-
-/* Neon Red for Delete / Cancel Actions */
-[data-theme="dark"] .btn-delete:hover,
-[data-theme="dark"] .modal-btn-cancel:hover {
-    box-shadow: 0 0 8px hsl(0, 80%, 50%), 0 0 16px hsl(0, 80%, 50%) !important;
-    border-color: hsl(0, 80%, 50%) !important;
-    color: #ffffff !important;
-    text-shadow: 0 0 3px rgba(255, 255, 255, 0.5) !important;
+[data-theme="dark"] .nav a.active,
+[data-theme="dark"] .tab-btn.active {
+    color: var(--color-brand) !important;
 }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -170,33 +158,40 @@ if (!isset($_SESSION['authenticated']) && $current_page !== 'access.php') {
             position: relative; /* For absolute positioning of toggle */
         }
         .nav a, .theme-toggle {
-            color: var(--color-text-secondary);
+            color: #ffffff !important;
             text-decoration: none;
             font-size: var(--text-sm);
-            font-weight: 500;
+            font-weight: 700;
             padding: 8px 16px;
             border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             gap: 6px;
             cursor: pointer;
-            background: transparent;
-            border: none;
+            background: var(--color-brand);
+            border: 1px solid var(--color-brand-light);
             font-family: 'Inter', sans-serif;
+            box-shadow: var(--shadow-sm);
+            text-shadow: none;
         }
-        .nav a:hover {
-            background: var(--color-overlay);
-            color: var(--color-text-primary);
-            transform: translateY(-1px);
-        }
-        .theme-toggle:hover {
-            background: var(--color-border);
-            color: var(--color-text-primary);
+        .nav a:hover, .theme-toggle:hover {
+            background: var(--color-brand-dark);
+            color: #ffffff !important;
+            box-shadow: var(--shadow-sm);
         }
         .nav a.active {
-            background: var(--color-brand-light);
-            color: var(--color-brand-dark);
-            font-weight: 600;
+            background: white;
+            color: var(--color-brand) !important;
+            font-weight: 800;
+            box-shadow: var(--shadow-sm);
+            text-shadow: none;
+        }
+        .nav a.logout-btn {
+            background: hsl(0, 80%, 50%);
+            border-color: hsl(0, 80%, 80%);
+        }
+        .nav a.logout-btn:hover {
+            background: hsl(0, 80%, 40%);
         }
         .theme-toggle {
             position: absolute;
@@ -448,7 +443,7 @@ if (!isset($_SESSION['authenticated']) && $current_page !== 'access.php') {
     <a href="borrowers_slip.php" class="<?php echo $current_page == 'borrowers_slip.php' ? 'active' : ''; ?>"><i data-lucide="shopping-cart" style="width: 16px; height: 16px;"></i> Borrower's Slip</a>
     <a href="logs.php" class="<?php echo $current_page == 'logs.php' ? 'active' : ''; ?>"><i data-lucide="clipboard-list" style="width: 16px; height: 16px;"></i> Logs</a>
     
-    <a href="access.php?logout=1" style="color: #e74c3c;"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Logout</a>
+    <a href="access.php?logout=1" class="logout-btn"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Logout</a>
 
     <!-- Theme Toggler -->
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">
