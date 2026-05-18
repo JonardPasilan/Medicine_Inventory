@@ -142,9 +142,14 @@ require_once __DIR__ . '/header.php';
             border-radius: var(--radius-md); text-align: center;
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--color-border);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            color: inherit;
         }
-        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--color-brand); }
+        .stat-card.active-card { border-color: var(--color-brand); background: var(--color-brand-light); }
         .stat-card h3 { color: var(--color-text-secondary); font-size: 14px; margin-bottom: 10px; }
         .stat-card .number { font-size: 32px; font-weight: bold; color: var(--color-text-primary); }
 
@@ -240,6 +245,16 @@ require_once __DIR__ . '/header.php';
         }
         .btn-export:hover { background: hsl(140, 60%, 33%); transform: translateY(-2px); }
 
+        .btn-remaining {
+            padding: 10px 20px; background: hsl(210, 70%, 40%);
+            color: white; border: none; border-radius: var(--radius-sm);
+            cursor: pointer; font-size: 14px; font-weight: 500;
+            font-family: 'Inter', sans-serif; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: all 0.3s ease;
+        }
+        .btn-remaining:hover { background: hsl(210, 70%, 33%); transform: translateY(-2px); }
+
         .btn-clear-logs {
             padding: 10px 20px; background: transparent;
             color: hsl(0, 70%, 50%); border: 1px solid hsl(0, 70%, 50%);
@@ -278,23 +293,48 @@ require_once __DIR__ . '/header.php';
 
     ?>
 
+    <?php
+    $cur_filter_action = isset($_GET['action']) ? $_GET['action'] : '';
+    $cur_filter_from   = isset($_GET['date_from']) ? $_GET['date_from'] : '';
+    $today_str = date('Y-m-d');
+    ?>
+
     <div class="stats">
-        <div class="stat-card">
+        <?php
+        // Card 1: Total Units Dispensed — links to filter by Released to patient
+        $c1_active = ($cur_filter_action === 'Released to patient' && $cur_filter_from === '') ? 'active-card' : '';
+        ?>
+        <a href="logs.php?action=Released+to+patient&filter=1" class="stat-card <?php echo $c1_active; ?>">
             <h3>Total Units Dispensed</h3>
             <div class="number"><?php echo (int)$total_dispensed; ?></div>
-        </div>
-        <div class="stat-card">
+        </a>
+
+        <?php
+        // Card 2: Total Transactions — links to clear all filters
+        $c2_active = ($cur_filter_action === '' && $cur_filter_from === '' && !isset($_GET['filter'])) ? '' : '';
+        ?>
+        <a href="logs.php" class="stat-card">
             <h3>Total Transactions</h3>
             <div class="number"><?php echo (int)$total_transactions; ?></div>
-        </div>
-        <div class="stat-card">
+        </a>
+
+        <?php
+        // Card 3: Today's Dispensed — links to Released to patient filtered to today
+        $c3_active = ($cur_filter_action === 'Released to patient' && $cur_filter_from === $today_str) ? 'active-card' : '';
+        ?>
+        <a href="logs.php?action=Released+to+patient&date_from=<?php echo $today_str; ?>&date_to=<?php echo $today_str; ?>&filter=1" class="stat-card <?php echo $c3_active; ?>">
             <h3>Today's Dispensed</h3>
             <div class="number" style="color:#27ae60;"><?php echo (int)$today_dispensed; ?></div>
-        </div>
-        <div class="stat-card">
+        </a>
+
+        <?php
+        // Card 4: New Batches Added — links to filter by New Batch Added
+        $c4_active = ($cur_filter_action === 'New Batch Added') ? 'active-card' : '';
+        ?>
+        <a href="logs.php?action=New+Batch+Added&filter=1" class="stat-card <?php echo $c4_active; ?>">
             <h3>New Batches Added</h3>
             <div class="number" style="color:#1f4f87;"><?php echo (int)$batches_added; ?></div>
-        </div>
+        </a>
     </div>
 
     <div class="filter-section">
@@ -334,9 +374,10 @@ require_once __DIR__ . '/header.php';
                        value="<?php echo isset($_GET['date_to']) ? htmlspecialchars($_GET['date_to']) : ''; ?>">
             </div>
             <div class="filter-buttons" style="width:100%; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-                <div style="display:flex; gap:10px;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button type="submit" name="filter" value="1" class="btn-filter">Apply Filter</button>
                     <a href="logs.php" class="btn-reset" style="text-decoration:none; display:inline-block; text-align:center;">Reset</a>
+                    <a href="remaining_medicines.php" class="btn-remaining" style="text-decoration:none;">💊 Remaining Medicines</a>
                 </div>
                 <div style="display:flex; gap:10px;">
                     <button type="submit" name="export" value="csv" class="btn-export">📊 Export to CSV</button>

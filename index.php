@@ -95,35 +95,41 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
             margin-bottom: 20px;
             box-shadow: var(--shadow-sm);
         }
-        .search-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; max-width: 600px; margin: 0 auto; }
-        .search-form input {
-            flex: 1;
-            padding: 10px 15px;
+        .search-wrap { position: relative; max-width: 600px; margin: 0 auto; }
+        .search-wrap .search-icon {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            width: 16px; height: 16px; color: var(--color-text-muted);
+            pointer-events: none;
+        }
+        .search-wrap input {
+            width: 100%;
+            padding: 11px 44px 11px 40px;
             border: 1px solid var(--color-border);
             background: var(--color-overlay);
             border-radius: var(--radius-sm);
             font-size: var(--text-sm);
             color: var(--color-text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .search-form input:focus {
+        .search-wrap input:focus {
             outline: none;
             border-color: var(--color-brand);
-            box-shadow: 0 0 0 2px var(--color-brand-light);
+            box-shadow: 0 0 0 3px var(--color-brand-light);
         }
-        .search-form button {
-            padding: 10px 20px;
-            background: var(--color-brand);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            font-size: var(--text-sm);
-            font-weight: 500;
+        .search-clear {
+            display: none; position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: var(--color-text-muted); font-size: 16px; line-height: 1;
+            padding: 2px 4px; border-radius: 50%;
+            transition: color 0.2s;
         }
-        .search-form button:hover {
-            background: var(--color-brand-dark);
-            box-shadow: var(--shadow-xs);
+        .search-clear:hover { color: var(--color-text-primary); }
+        .search-count {
+            margin-top: 8px; text-align: center;
+            font-size: var(--text-xs); color: var(--color-brand); font-weight: 600;
+            display: none; align-items: center; justify-content: center; gap: 5px;
         }
+        .search-count.visible { display: flex; }
 
         /* Tabs Section */
         .tabs-container {
@@ -331,28 +337,30 @@ $expiring_soon_count = $expiring_soon_q ? $expiring_soon_q->fetch_assoc()['c'] :
         </div>
     </div>
 
-    <!-- Search Section -->
+    <!-- Live Search Section -->
     <div class="search-section">
-        <form method="GET" class="search-form" onsubmit="showLoading()">
-            <div style="position: relative; flex: 1;">
-                <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--color-text-muted);"></i>
-                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name or description..." style="padding-left: 36px; width: 100%;">
-                <?php if ($filter): ?>
-                    <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filter); ?>">
-                <?php endif; ?>
-            </div>
-            <button type="submit">Search</button>
-            <?php if ($search || $filter): ?>
-                <a href="index.php" class="btn btn-edit">Clear All</a>
-            <?php endif; ?>
-        </form>
+        <div class="search-wrap">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="liveSearchInput"
+                   value="<?php echo htmlspecialchars($search); ?>"
+                   placeholder="🔍 Live search by name or description..."
+                   oninput="liveSearch(this.value)"
+                   autocomplete="off">
+            <button class="search-clear" id="searchClearBtn" onclick="clearLiveSearch()" title="Clear search">✕</button>
+        </div>
+        <div class="search-count" id="searchCount">
+            <i data-lucide="filter" style="width:12px; height:12px;"></i>
+            <span id="searchCountText"></span>
+        </div>
         <?php if ($filter === 'low'): ?>
-            <div style="margin-top: 10px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                <i data-lucide="filter" style="width:12px; height:12px;"></i> Showing Low Stock Items Only (Total Qty ≤ 5)
+            <div style="margin-top: 8px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                <i data-lucide="trending-down" style="width:12px; height:12px;"></i> Showing Low Stock Items Only (Total Qty ≤ 5)
+                &nbsp;<a href="index.php" style="color:var(--color-text-muted); font-weight:400;">✕ Clear filter</a>
             </div>
         <?php elseif ($filter === 'soon'): ?>
-            <div style="margin-top: 10px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                <i data-lucide="filter" style="width:12px; height:12px;"></i> Showing Items Expiring Soon (Within 30 Days)
+            <div style="margin-top: 8px; font-size: var(--text-xs); color: var(--color-brand); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                <i data-lucide="calendar" style="width:12px; height:12px;"></i> Showing Items Expiring Soon (Within 30 Days)
+                &nbsp;<a href="index.php" style="color:var(--color-text-muted); font-weight:400;">✕ Clear filter</a>
             </div>
         <?php endif; ?>
     </div>
@@ -578,7 +586,10 @@ function renderInventoryTable($conn, $type, $search, $filter = '') {
 
             $row_style = $is_exp ? "background:hsl(0, 100%, 99%);" : "";
             
-            echo "<tr class='group-row' onclick='toggleBatch(\"$gid\")' style='$row_style'>
+            $data_name  = htmlspecialchars($g['name'],         ENT_QUOTES, 'UTF-8');
+            $data_label = htmlspecialchars((string)$g['label'], ENT_QUOTES, 'UTF-8');
+            echo "<tr class='group-row' onclick='toggleBatch(\"$gid\")' style='$row_style'
+                      data-name='$data_name' data-label='$data_label'>
                     <td>$i</td>
                     <td>
                         <strong style='color:var(--color-text-primary);'>$gname</strong> <span class='toggle-icon' id='icon_$gid'><i data-lucide='chevron-down' style='width:14px;height:14px;'></i></span><br>
@@ -651,6 +662,9 @@ function renderInventoryTable($conn, $type, $search, $filter = '') {
             document.getElementById('medicalView').classList.add('active');
             localStorage.setItem('activeInventoryTab', 'medical');
         }
+        // Re-apply live search after switching tabs
+        const lsInput = document.getElementById('liveSearchInput');
+        if (lsInput) liveSearch(lsInput.value);
     }
 
     function toggleBatch(gid) {
@@ -724,11 +738,67 @@ function renderInventoryTable($conn, $type, $search, $filter = '') {
         }
     }
 
-    // Restore last active tab on load
+    // ── Live Search ──────────────────────────────────────────
+    function liveSearch(query) {
+        const q = query.trim().toLowerCase();
+        const clearBtn   = document.getElementById('searchClearBtn');
+        const countBox   = document.getElementById('searchCount');
+        const countText  = document.getElementById('searchCountText');
+
+        clearBtn.style.display = q ? 'block' : 'none';
+
+        // Find the currently visible table container
+        const activeView = document.querySelector('.table-container.active');
+        if (!activeView) return;
+
+        const groupRows = activeView.querySelectorAll('tr.group-row');
+        let visible = 0;
+
+        groupRows.forEach(row => {
+            const name  = (row.dataset.name  || '').toLowerCase();
+            const label = (row.dataset.label || '').toLowerCase();
+            const match = !q || name.includes(q) || label.includes(q);
+
+            row.style.display = match ? '' : 'none';
+
+            // Also hide/show the batch sub-rows belonging to this group
+            const gid = row.getAttribute('onclick')?.match(/toggleBatch\("([^"]+)"\)/)?.[1];
+            if (gid) {
+                activeView.querySelectorAll(`[data-grp="${gid}"]`).forEach(sub => {
+                    if (!match) {
+                        sub.style.display = 'none';
+                        sub.classList.remove('expanded');
+                    }
+                });
+            }
+
+            if (match) visible++;
+        });
+
+        if (q && groupRows.length > 0) {
+            countText.textContent = `${visible} of ${groupRows.length} item(s) match "${query.trim()}"`;
+            countBox.classList.add('visible');
+        } else {
+            countBox.classList.remove('visible');
+        }
+    }
+
+    function clearLiveSearch() {
+        const input = document.getElementById('liveSearchInput');
+        input.value = '';
+        input.focus();
+        liveSearch('');
+    }
+
+    // Restore last active tab on load & re-apply live search if input pre-filled
     window.onload = function() {
         const savedTab = localStorage.getItem('activeInventoryTab');
         if (savedTab) switchTab(savedTab);
+        // Re-apply search if PHP pre-filled the input (from URL ?search=)
+        const lsInput = document.getElementById('liveSearchInput');
+        if (lsInput && lsInput.value.trim()) liveSearch(lsInput.value);
     };
+
 
     // Ripple effect
     document.querySelectorAll('.btn, .tab-btn').forEach(button => {

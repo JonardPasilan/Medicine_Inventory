@@ -170,8 +170,10 @@ require_once __DIR__ . '/header.php';
                 }
 
                 $val_exp = !empty($e) ? "'$e'" : "NULL";
+                // Auto-archive immediately if the entered expiration date is already in the past
+                $is_already_expired = (!empty($e) && strtotime($e) < strtotime(date('Y-m-d'))) ? 1 : 0;
                 $sql = "INSERT INTO medicines (name, label, type, category, unit, batch_number, quantity, expiration_date, is_archived)
-                        VALUES ('$n', '$l', '$t', '$c', '$u', $next_bn, $q, $val_exp, 0)";
+                        VALUES ('$n', '$l', '$t', '$c', '$u', $next_bn, $q, $val_exp, $is_already_expired)";
 
                 if ($conn->query($sql)) {
                     $new_id = $conn->insert_id;

@@ -126,16 +126,71 @@ $meds_query = $conn->query("
         }
         label .required { color: #e74c3c; margin-left: 3px; }
 
-        select, input {
+        input {
             width: 100%; padding: 12px 15px;
             border: 2px solid var(--color-border); border-radius: var(--radius-sm);
             font-size: 14px; font-family: inherit;
             transition: all 0.3s ease; background: var(--color-overlay); color: var(--color-text-primary);
         }
-        select:focus, input:focus {
+        input:focus {
             outline: none; border-color: var(--color-brand);
             box-shadow: 0 0 0 3px var(--color-brand-light);
             transform: translateY(-1px);
+        }
+
+        /* ── Searchable Dropdown ── */
+        .med-search-wrap { position: relative; }
+        .med-search-input {
+            width: 100%; padding: 12px 40px 12px 15px;
+            border: 2px solid var(--color-border); border-radius: var(--radius-sm);
+            font-size: 14px; font-family: inherit;
+            transition: all 0.3s ease; background: var(--color-overlay); color: var(--color-text-primary);
+            cursor: pointer;
+        }
+        .med-search-input:focus {
+            outline: none; border-color: var(--color-brand);
+            box-shadow: 0 0 0 3px var(--color-brand-light);
+            transform: translateY(-1px);
+        }
+        .med-search-wrap .search-arrow {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            pointer-events: none; color: var(--color-text-muted); font-size: 12px;
+            transition: transform 0.2s ease;
+        }
+        .med-search-wrap.open .search-arrow { transform: translateY(-50%) rotate(180deg); }
+        .med-dropdown {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: var(--color-surface); border: 2px solid var(--color-brand);
+            border-radius: var(--radius-sm); z-index: 999;
+            max-height: 280px; overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            animation: dropFadeIn 0.2s ease;
+        }
+        @keyframes dropFadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        .med-search-wrap.open .med-dropdown { display: block; }
+        .med-option {
+            padding: 10px 15px; cursor: pointer; font-size: 14px;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.15s ease;
+        }
+        .med-option:last-child { border-bottom: none; }
+        .med-option:hover, .med-option.highlighted { background: var(--color-brand-light); }
+        .med-option.disabled { color: var(--color-text-muted); cursor: not-allowed; opacity: 0.6; }
+        .med-option.disabled:hover { background: transparent; }
+        .med-option .opt-name { font-weight: 600; }
+        .med-option .opt-meta { font-size: 12px; color: var(--color-text-muted); margin-top: 1px; }
+        .med-option .opt-badge {
+            font-size: 11px; font-weight: 700; padding: 2px 8px;
+            border-radius: 99px; white-space: nowrap;
+        }
+        .opt-badge.ok    { background: #d5f4e6; color: #1a7a4a; }
+        .opt-badge.low   { background: #fff3cd; color: #856404; }
+        .opt-badge.none  { background: #ffeaea; color: #c0392b; }
+        .med-no-results {
+            padding: 18px; text-align: center;
+            color: var(--color-text-muted); font-size: 14px;
         }
 
         /* Stock Info Panel */
@@ -277,41 +332,51 @@ $meds_query = $conn->query("
         </div>
 
         <form method="POST" id="dispenseForm" onsubmit="handleSubmit(event)">
+            <!-- Hidden field that carries the selected medicine name on submit -->
+            <input type="hidden" name="med_name" id="medNameHidden">
+
             <div class="form-group">
                 <label>Select Medicine <span class="required">*</span></label>
-                <select name="med_name" id="medicineSelect" required onchange="updateStockPanel()">
-                    <option value="">-- Select a medicine --</option>
-                    <?php
-                    if ($meds_query && $meds_query->num_rows > 0) {
-                        while ($m = $meds_query->fetch_assoc()) {
-                            $oname    = htmlspecialchars($m['name'],  ENT_QUOTES, 'UTF-8');
-                            $olabel   = htmlspecialchars((string)$m['label'], ENT_QUOTES, 'UTF-8');
-                            $avail    = (int)$m['avail_qty'];
-                            $expired  = (int)$m['expired_qty'];
-                            $next_exp = $m['next_exp'];
-
-                            $sname  = mysqli_real_escape_string($conn, $m['name']);
-                            $slabel = mysqli_real_escape_string($conn, (string)$m['label']);
-                            $bq     = $conn->query("SELECT quantity, expiration_date FROM medicines WHERE name = '$sname' AND label = '$slabel' AND quantity > 0 ORDER BY expiration_date ASC");
-
-                            $batches_info = [];
-                            while ($brow = $bq->fetch_assoc()) {
-                                $batches_info[] = ['qty' => (int)$brow['quantity'], 'exp' => $brow['expiration_date']];
-                            }
-
-                            $data = htmlspecialchars(json_encode([
-                                'avail' => $avail, 'expired' => $expired, 'next_exp' => $next_exp, 'batches' => $batches_info
-                            ]), ENT_QUOTES, 'UTF-8');
-
-                            $disabled = ($avail <= 0) ? 'disabled' : '';
-                            $style = ($avail <= 0) ? "color:#e74c3c;" : ($avail <= 5 ? "color:#f39c12;" : "");
-
-                            echo "<option value='{$oname}' data-info='{$data}' $disabled style='{$style}'>{$oname} ({$olabel}) — {$avail} avail</option>";
-                        }
-                    }
-                    ?>
-                </select>
+                <div class="med-search-wrap" id="medSearchWrap">
+                    <input type="text" class="med-search-input" id="medSearchInput"
+                           placeholder="🔍 Type to search medicine..."
+                           autocomplete="off"
+                           readonly
+                           onclick="openMedDropdown()">
+                    <span class="search-arrow">▼</span>
+                    <div class="med-dropdown" id="medDropdown"></div>
+                </div>
             </div>
+
+            <?php
+            /* Build JS medicine data map */
+            $med_data_map = [];
+            if ($meds_query && $meds_query->num_rows > 0) {
+                while ($m = $meds_query->fetch_assoc()) {
+                    $avail    = (int)$m['avail_qty'];
+                    $expired  = (int)$m['expired_qty'];
+                    $next_exp = $m['next_exp'];
+                    $sname    = mysqli_real_escape_string($conn, $m['name']);
+                    $slabel   = mysqli_real_escape_string($conn, (string)$m['label']);
+                    $bq       = $conn->query("SELECT quantity, expiration_date FROM medicines WHERE name = '$sname' AND label = '$slabel' AND quantity > 0 ORDER BY expiration_date ASC");
+                    $batches_info = [];
+                    while ($brow = $bq->fetch_assoc()) {
+                        $batches_info[] = ['qty' => (int)$brow['quantity'], 'exp' => $brow['expiration_date']];
+                    }
+                    $med_data_map[] = [
+                        'name'     => $m['name'],
+                        'label'    => (string)$m['label'],
+                        'avail'    => $avail,
+                        'expired'  => $expired,
+                        'next_exp' => $next_exp,
+                        'batches'  => $batches_info,
+                    ];
+                }
+            }
+            ?>
+            <script>
+            const MED_DATA = <?php echo json_encode($med_data_map); ?>;
+            </script>
 
             <div id="stockPanel" class="stock-panel">
                 <div class="sp-row">
@@ -380,7 +445,15 @@ $meds_query = $conn->query("
 
     function showLoading() { document.getElementById('loadingOverlay').style.display = 'flex'; }
 
-    function handleSubmit() { showLoading(); }
+    function handleSubmit(e) {
+        if (!document.getElementById('medNameHidden').value) {
+            e.preventDefault();
+            document.getElementById('medSearchInput').focus();
+            document.getElementById('medSearchInput').style.borderColor = '#e74c3c';
+            return;
+        }
+        showLoading();
+    }
 
     const today = new Date().toISOString().split('T')[0];
     const soon  = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
@@ -391,25 +464,94 @@ $meds_query = $conn->query("
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
+    /* ── Searchable Dropdown Logic ── */
+    let selectedMedInfo = null;
+
+    function renderDropdown(filter) {
+        const dropdown = document.getElementById('medDropdown');
+        const q = (filter || '').toLowerCase().trim();
+        const items = q ? MED_DATA.filter(m =>
+            m.name.toLowerCase().includes(q) || m.label.toLowerCase().includes(q)
+        ) : MED_DATA;
+
+        if (items.length === 0) {
+            dropdown.innerHTML = `<div class="med-no-results">😕 No medicines found for "${filter}"</div>`;
+            return;
+        }
+
+        dropdown.innerHTML = items.map((m, idx) => {
+            const disabled = m.avail <= 0;
+            let badge, badgeCls;
+            if (disabled)      { badge = '0 avail'; badgeCls = 'none'; }
+            else if (m.avail <= 5) { badge = m.avail + ' avail ⚠️'; badgeCls = 'low'; }
+            else               { badge = m.avail + ' avail'; badgeCls = 'ok'; }
+            const meta = m.label ? m.label : '&nbsp;';
+            return `<div class="med-option${disabled ? ' disabled' : ''}" data-idx="${MED_DATA.indexOf(m)}" onclick="${disabled ? '' : 'selectMed(this)'}">
+                        <div>
+                            <div class="opt-name">${m.name}</div>
+                            <div class="opt-meta">${meta}</div>
+                        </div>
+                        <span class="opt-badge ${badgeCls}">${badge}</span>
+                    </div>`;
+        }).join('');
+    }
+
+    function openMedDropdown() {
+        const wrap = document.getElementById('medSearchWrap');
+        const input = document.getElementById('medSearchInput');
+        wrap.classList.add('open');
+        // switch to editable so user can type
+        input.removeAttribute('readonly');
+        input.select();
+        renderDropdown(input.value);
+    }
+
+    function closeMedDropdown() {
+        const wrap = document.getElementById('medSearchWrap');
+        wrap.classList.remove('open');
+        document.getElementById('medSearchInput').setAttribute('readonly', true);
+    }
+
+    function selectMed(el) {
+        const idx = parseInt(el.dataset.idx);
+        const m = MED_DATA[idx];
+        selectedMedInfo = m;
+        document.getElementById('medNameHidden').value = m.name;
+        document.getElementById('medSearchInput').value = m.name + (m.label ? ' (' + m.label + ')' : '') + ' — ' + m.avail + ' avail';
+        document.getElementById('medSearchInput').style.borderColor = '';
+        closeMedDropdown();
+        updateStockPanel();
+    }
+
+    // Filter while typing
+    document.getElementById('medSearchInput').addEventListener('input', function() {
+        renderDropdown(this.value);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+        if (!document.getElementById('medSearchWrap').contains(e.target)) {
+            closeMedDropdown();
+        }
+    });
+
     function updateStockPanel() {
-        const sel = document.getElementById('medicineSelect');
-        const panel = document.getElementById('stockPanel');
+        const panel    = document.getElementById('stockPanel');
         const qtyInput = document.getElementById('qty');
-        const btn = document.getElementById('dispenseBtn');
+        const btn      = document.getElementById('dispenseBtn');
         const warnArea = document.getElementById('warnArea');
         const batchList = document.getElementById('batchList');
 
         warnArea.innerHTML = ''; batchList.innerHTML = '';
 
-        if (!sel.value) {
+        if (!selectedMedInfo) {
             panel.style.display = 'none'; qtyInput.disabled = true; qtyInput.value = ''; btn.disabled = true; return;
         }
 
-        const info = JSON.parse(sel.options[sel.selectedIndex].dataset.info || '{}');
-        const avail = info.avail || 0;
-        const expired = info.expired || 0;
-        const nextExp = info.next_exp || null;
-        const batches = info.batches || [];
+        const avail   = selectedMedInfo.avail   || 0;
+        const expired = selectedMedInfo.expired  || 0;
+        const nextExp = selectedMedInfo.next_exp || null;
+        const batches = selectedMedInfo.batches  || [];
 
         document.getElementById('panelAvail').textContent = avail + ' unit(s)';
         document.getElementById('panelExpired').textContent = expired + ' unit(s)';
@@ -422,25 +564,23 @@ $meds_query = $conn->query("
         if (batches.length > 0) {
             let html = '<div class="batch-list-title">📦 Batches (FIFO Order):</div>';
             batches.forEach(b => {
-                let cls = 'b-ok', tag = '✓ Valid';
-                if (b.exp < today) { cls = 'b-expired'; tag = '⚠️ Expired'; }
-                else if (b.exp < soon) { cls = 'b-soon'; tag = '📅 Expiring Soon'; }
+                let cls = 'b-ok';
+                if (b.exp && b.exp < today)     { cls = 'b-expired'; }
+                else if (b.exp && b.exp < soon) { cls = 'b-soon'; }
                 html += `<div class='batch-item ${cls}'><span>Exp: ${formatDate(b.exp)}</span><span>${b.qty} unit(s)</span></div>`;
             });
             batchList.innerHTML = html;
         }
 
         qtyInput.disabled = avail <= 0;
-        if (!qtyInput.disabled) { qtyInput.max = avail; validateQty(); }
+        if (!qtyInput.disabled) { qtyInput.max = avail; qtyInput.value = ''; validateQty(); }
     }
 
     function validateQty() {
-        const qty = parseInt(document.getElementById('qty').value) || 0;
-        const sel = document.getElementById('medicineSelect');
-        const info = JSON.parse(sel.options[sel.selectedIndex].dataset.info || '{}');
-        const avail = info.avail || 0;
-        const msg = document.getElementById('qtyMsg');
-        const btn = document.getElementById('dispenseBtn');
+        const qty   = parseInt(document.getElementById('qty').value) || 0;
+        const avail = selectedMedInfo ? (selectedMedInfo.avail || 0) : 0;
+        const msg   = document.getElementById('qtyMsg');
+        const btn   = document.getElementById('dispenseBtn');
 
         if (qty <= 0) { msg.textContent = '⚠️ Enter at least 1 unit.'; msg.style.display = 'block'; btn.disabled = true; }
         else if (qty > avail) { msg.textContent = '⚠️ Max available is ' + avail; msg.style.display = 'block'; btn.disabled = true; }
