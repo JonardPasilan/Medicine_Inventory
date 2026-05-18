@@ -16,10 +16,8 @@ if (isset($_POST['add_equipment'])) {
     $qsrv   = intval($_POST['qty_serviceable']   ?? 0);
     $qunsrv = intval($_POST['qty_unserviceable'] ?? 0);
     $qrep   = intval($_POST['qty_repair']        ?? 0);
+    $q      = intval($_POST['quantity']          ?? 1);
     $rem    = mysqli_real_escape_string($conn, trim($_POST['remarks'] ?? ''));
-
-    // Quantity is always the sum of the three statuses
-    $q = $qsrv + $qunsrv + $qrep;
 
     $errors = [];
     if (empty($n)) $errors[] = "Item Name is required.";
@@ -160,7 +158,7 @@ if (isset($_POST['add_equipment'])) {
         <div class="form-header">
             <span class="icon">🦷🩺</span>
             <h2>Add Device & Equipment</h2>
-            <p>For Dental and Medical equipment only. Quantity is auto-computed.</p>
+            <p>For Dental and Medical equipment only.</p>
         </div>
 
         <form method="POST" id="eqForm" onsubmit="document.getElementById('loadingOverlay').style.display='flex';">
@@ -219,26 +217,27 @@ if (isset($_POST['add_equipment'])) {
             </div>
 
             <hr class="section-divider">
-            <p class="section-label">📦 Quantity (Auto-Computed)</p>
+            <p class="section-label">📦 Quantity</p>
+
+            <div class="form-group">
+                <label>Total Quantity <span class="required">*</span></label>
+                <input type="number" name="quantity" min="1" value="1" required>
+            </div>
 
             <div class="qty-grid">
                 <div class="form-group">
                     <label>✅ Serviceable</label>
-                    <input type="number" name="qty_serviceable" id="svcInput" min="0" value="0" oninput="syncQty()">
+                    <input type="number" name="qty_serviceable" min="0" value="0">
                 </div>
                 <div class="form-group">
                     <label>❌ Unserviceable</label>
-                    <input type="number" name="qty_unserviceable" id="unsvcInput" min="0" value="0" oninput="syncQty()">
+                    <input type="number" name="qty_unserviceable" min="0" value="0">
                 </div>
                 <div class="form-group">
                     <label>🔧 For Repair</label>
-                    <input type="number" name="qty_repair" id="repInput" min="0" value="0" oninput="syncQty()">
+                    <input type="number" name="qty_repair" min="0" value="0">
                 </div>
             </div>
-
-            <!-- Hidden quantity field (submitted to DB) -->
-            <input type="hidden" name="quantity" id="totalQty" value="0">
-            <div class="qty-summary" id="qtySummary">Total Quantity: <strong>0</strong></div>
 
             <hr class="section-divider">
 
@@ -257,15 +256,6 @@ if (isset($_POST['add_equipment'])) {
 </div>
 
 <script>
-    function syncQty() {
-        const svc   = parseInt(document.getElementById('svcInput').value)   || 0;
-        const unsvc = parseInt(document.getElementById('unsvcInput').value) || 0;
-        const rep   = parseInt(document.getElementById('repInput').value)   || 0;
-        const total = svc + unsvc + rep;
-        document.getElementById('totalQty').value     = total;
-        document.getElementById('qtySummary').innerHTML = `Total Quantity: <strong>${total}</strong>`;
-    }
-
     function showToast(message, type = 'success') {
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');

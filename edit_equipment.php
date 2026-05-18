@@ -22,7 +22,7 @@ if (isset($_POST['update_equipment'])) {
     $qunsrv = intval($_POST['qty_unserviceable'] ?? 0);
     $qrep   = intval($_POST['qty_repair']        ?? 0);
     $rem    = $conn->real_escape_string(trim($_POST['remarks'] ?? ''));
-    $q      = $qsrv + $qunsrv + $qrep; // Auto-computed
+    $q      = intval($_POST['quantity'] ?? 1);
 
     $val_acq = !empty($date_acq) ? "'$date_acq'" : "NULL";
 
@@ -170,29 +170,26 @@ require_once __DIR__ . '/header.php';
             </div>
 
             <hr class="section-divider">
-            <p class="section-label">📦 Quantity (Auto-Computed)</p>
+            <p class="section-label">📦 Quantity</p>
+
+            <div class="form-group">
+                <label>Total Quantity <span class="required">*</span></label>
+                <input type="number" name="quantity" min="1" value="<?php echo (int)$row['quantity']; ?>" required>
+            </div>
 
             <div class="qty-grid">
                 <div class="form-group">
                     <label>✅ Serviceable</label>
-                    <input type="number" name="qty_serviceable" id="svcInput" min="0"
-                           value="<?php echo (int)($row['qty_serviceable'] ?? 0); ?>" oninput="syncQty()">
+                    <input type="number" name="qty_serviceable" min="0" value="<?php echo (int)($row['qty_serviceable'] ?? 0); ?>">
                 </div>
                 <div class="form-group">
                     <label>❌ Unserviceable</label>
-                    <input type="number" name="qty_unserviceable" id="unsvcInput" min="0"
-                           value="<?php echo (int)($row['qty_unserviceable'] ?? 0); ?>" oninput="syncQty()">
+                    <input type="number" name="qty_unserviceable" min="0" value="<?php echo (int)($row['qty_unserviceable'] ?? 0); ?>">
                 </div>
                 <div class="form-group">
                     <label>🔧 For Repair</label>
-                    <input type="number" name="qty_repair" id="repInput" min="0"
-                           value="<?php echo (int)($row['qty_repair'] ?? 0); ?>" oninput="syncQty()">
+                    <input type="number" name="qty_repair" min="0" value="<?php echo (int)($row['qty_repair'] ?? 0); ?>">
                 </div>
-            </div>
-
-            <input type="hidden" name="quantity" id="totalQty" value="<?php echo (int)$row['quantity']; ?>">
-            <div class="qty-summary" id="qtySummary">
-                Total Quantity: <strong><?php echo (int)$row['quantity']; ?></strong>
             </div>
 
             <hr class="section-divider">
@@ -211,15 +208,6 @@ require_once __DIR__ . '/header.php';
 </div>
 
 <script>
-    function syncQty() {
-        const svc   = parseInt(document.getElementById('svcInput').value)   || 0;
-        const unsvc = parseInt(document.getElementById('unsvcInput').value) || 0;
-        const rep   = parseInt(document.getElementById('repInput').value)   || 0;
-        const total = svc + unsvc + rep;
-        document.getElementById('totalQty').value     = total;
-        document.getElementById('qtySummary').innerHTML = `Total Quantity: <strong>${total}</strong>`;
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         flatpickr("input[type=date]", {
             altInput: true, altFormat: "m/d/Y",

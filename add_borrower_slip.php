@@ -61,7 +61,7 @@ if ($equipment_list) {
 
 <style>
     .container {
-        max-width: 1000px;
+        max-width: 1150px;
         margin: 30px auto;
         padding: 0 20px;
     }
@@ -170,6 +170,37 @@ if ($equipment_list) {
         align-items: center;
         justify-content: center;
     }
+
+    /* ── Searchable Dropdown ── */
+    .med-search-wrap { position: relative; }
+    .med-search-wrap.open { z-index: 9999; }
+    .med-search-input {
+        width: 100%; padding: 8px 10px;
+        border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+        font-size: var(--text-sm); font-family: inherit;
+        background: var(--color-overlay); color: var(--color-text-primary);
+        cursor: pointer;
+    }
+    .med-search-input:focus {
+        outline: none; border-color: var(--color-brand);
+    }
+    .med-dropdown {
+        display: none; position: fixed;
+        background: var(--color-surface); border: 1px solid var(--color-brand);
+        border-radius: var(--radius-sm); z-index: 99999;
+        max-height: 200px; overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        white-space: nowrap;
+    }
+    .med-search-wrap.open .med-dropdown { display: block; }
+    .med-option {
+        padding: 8px 12px; cursor: pointer; font-size: var(--text-sm);
+        border-bottom: 1px solid var(--color-border);
+        color: var(--color-text-primary);
+    }
+    .med-option:last-child { border-bottom: none; }
+    .med-option:hover { background: var(--color-brand-light); }
+    .med-no-results { padding: 10px; text-align: center; color: var(--color-text-muted); font-size: var(--text-sm); }
 </style>
 
 <div class="container">
@@ -206,17 +237,19 @@ if ($equipment_list) {
                 </div>
             </div>
 
-            <div style="overflow-x: auto;">
+
+
+            <div style="overflow-x: auto; margin-top: 15px;">
                 <table class="items-table" id="itemsTable">
                     <thead>
                         <tr>
-                            <th style="width: 100px;">Item No</th>
-                            <th style="width: 80px;">Qty</th>
-                            <th>Item Description</th>
-                            <th>Date/Time Released</th>
-                            <th>Date/Time Returned</th>
-                            <th>Remarks/Purpose</th>
-                            <th style="width: 40px;"></th>
+                            <th style="width: 80px; min-width: 80px;">Item No</th>
+                            <th style="width: 70px; min-width: 70px;">Qty</th>
+                            <th style="min-width: 250px;">Item Description</th>
+                            <th style="min-width: 180px;">Date/Time Released</th>
+                            <th style="min-width: 180px;">Date/Time Returned</th>
+                            <th style="min-width: 150px;">Remarks/Purpose</th>
+                            <th style="width: 40px; min-width: 40px;"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -224,16 +257,11 @@ if ($equipment_list) {
                             <td><input type="text" name="items[0][item_no]"></td>
                             <td><input type="number" name="items[0][quantity]" value="1" min="1"></td>
                         <td>
-                            <select name="items[0][description]" required style="width:100%; padding:6px; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:var(--text-sm);">
-                                <option value="">-- Select Equipment --</option>
-                                <?php foreach ($equipment_options as $eq): ?>
-                                    <option value="<?php echo htmlspecialchars($eq['name']); ?>">
-                                        <?php echo htmlspecialchars($eq['name']); ?>
-                                        <?php if (!empty($eq['brand_serial'])): ?> (<?php echo htmlspecialchars($eq['brand_serial']); ?>)<?php endif; ?>
-                                        — <?php echo (int)$eq['qty_serviceable']; ?> available
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div class="med-search-wrap" id="wrap-0">
+                                <input type="hidden" name="items[0][description]" id="val-0">
+                                <input type="text" class="med-search-input" id="input-0" autocomplete="off" placeholder="Search Equipment..." required readonly onclick="openDropdown(0)" oninput="filterDropdown(0, this.value)">
+                                <div class="med-dropdown" id="drop-0"></div>
+                            </div>
                         </td>
                             <td><input type="datetime-local" name="items[0][released]"></td>
                             <td><input type="datetime-local" name="items[0][returned]"></td>
@@ -260,9 +288,8 @@ if ($equipment_list) {
 </div>
 
 <script>
-    // Equipment options from PHP for use in dynamically added rows
     const equipmentOptions = <?php
-        $opts = [['value' => '', 'label' => '-- Select Equipment --']];
+        $opts = [];
         foreach ($equipment_options as $eq) {
             $label = htmlspecialchars($eq['name'], ENT_QUOTES);
             if (!empty($eq['brand_serial'])) $label .= ' (' . htmlspecialchars($eq['brand_serial'], ENT_QUOTES) . ')';
@@ -272,12 +299,96 @@ if ($equipment_list) {
         echo json_encode($opts);
     ?>;
 
-    function buildEquipmentDropdown(name) {
-        let opts = equipmentOptions.map(o =>
-            `<option value="${o.value}">${o.label}</option>`
-        ).join('');
-        return `<select name="${name}" required style="width:100%; padding:6px; border:1px solid #ddd; border-radius:4px; font-size:13px;">${opts}</select>`;
+    let activeDropdown = null;
+
+    function buildEquipmentInput(rowId, name) {
+        return `
+            <div class="med-search-wrap" id="wrap-${rowId}">
+                <input type="hidden" name="${name}" id="val-${rowId}">
+                <input type="text" class="med-search-input" id="input-${rowId}" autocomplete="off" placeholder="Search Equipment..." required readonly onclick="openDropdown(${rowId})" oninput="filterDropdown(${rowId}, this.value)">
+                <div class="med-dropdown" id="drop-${rowId}"></div>
+            </div>
+        `;
     }
+
+    function renderDropdown(rowId, filter = '') {
+        const drop = document.getElementById('drop-' + rowId);
+        const q = filter.toLowerCase().trim();
+        const items = q ? equipmentOptions.filter(o => o.label.toLowerCase().includes(q)) : equipmentOptions;
+        
+        if (items.length === 0) {
+            drop.innerHTML = `<div class="med-no-results">😕 No items found</div>`;
+            return;
+        }
+
+        drop.innerHTML = items.map((o, idx) => {
+            const arrIdx = equipmentOptions.indexOf(o);
+            return `<div class="med-option" onclick="selectItem(${rowId}, ${arrIdx})">${o.label}</div>`;
+        }).join('');
+    }
+
+    function openDropdown(rowId) {
+        if (activeDropdown !== null && activeDropdown !== rowId) {
+            closeDropdown(activeDropdown);
+        }
+        activeDropdown = rowId;
+        const wrap = document.getElementById('wrap-' + rowId);
+        const input = document.getElementById('input-' + rowId);
+        const drop = document.getElementById('drop-' + rowId);
+        
+        const rect = wrap.getBoundingClientRect();
+        drop.style.top = (rect.bottom + 2) + 'px';
+        drop.style.left = rect.left + 'px';
+        drop.style.minWidth = rect.width + 'px';
+
+        wrap.classList.add('open');
+        input.removeAttribute('readonly');
+        input.select();
+        renderDropdown(rowId, input.value.includes('—') ? '' : input.value);
+    }
+
+    function filterDropdown(rowId, val) {
+        // If they start typing, we clear the hidden value so they must select again
+        document.getElementById('val-' + rowId).value = '';
+        renderDropdown(rowId, val);
+    }
+
+    function closeDropdown(rowId) {
+        const wrap = document.getElementById('wrap-' + rowId);
+        if (wrap) {
+            wrap.classList.remove('open');
+            document.getElementById('input-' + rowId).setAttribute('readonly', true);
+            
+            // If they didn't select anything valid, clear it
+            if (!document.getElementById('val-' + rowId).value) {
+                document.getElementById('input-' + rowId).value = '';
+            }
+        }
+        if (activeDropdown === rowId) activeDropdown = null;
+    }
+
+    function selectItem(rowId, arrIdx) {
+        const item = equipmentOptions[arrIdx];
+        document.getElementById('val-' + rowId).value = item.value;
+        document.getElementById('input-' + rowId).value = item.label;
+        closeDropdown(rowId);
+    }
+
+    document.addEventListener('click', function(e) {
+        if (activeDropdown !== null) {
+            const wrap = document.getElementById('wrap-' + activeDropdown);
+            const drop = document.getElementById('drop-' + activeDropdown);
+            if (wrap && !wrap.contains(e.target) && drop && !drop.contains(e.target)) {
+                closeDropdown(activeDropdown);
+            }
+        }
+    });
+
+    window.addEventListener('scroll', function() {
+        if (activeDropdown !== null) {
+            closeDropdown(activeDropdown);
+        }
+    }, true);
 
     let rowCount = 1;
     function addRow() {
@@ -287,7 +398,7 @@ if ($equipment_list) {
         newRow.innerHTML = `
             <td><input type="text" name="items[${rowCount}][item_no]"></td>
             <td><input type="number" name="items[${rowCount}][quantity]" value="1" min="1"></td>
-            <td>${buildEquipmentDropdown(`items[${rowCount}][description]`)}</td>
+            <td>${buildEquipmentInput(rowCount, `items[${rowCount}][description]`)}</td>
             <td><input type="datetime-local" name="items[${rowCount}][released]"></td>
             <td><input type="datetime-local" name="items[${rowCount}][returned]"></td>
             <td><textarea name="items[${rowCount}][remarks]" rows="1"></textarea></td>
