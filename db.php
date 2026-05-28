@@ -26,6 +26,16 @@ if (!in_array('category', $existing_cols)) {
 if (!in_array('unit', $existing_cols)) {
     $conn->query("ALTER TABLE medicines ADD COLUMN unit VARCHAR(20) DEFAULT 'pcs' AFTER category");
 }
+if (!in_array('pcs_per_box', $existing_cols)) {
+    $conn->query("ALTER TABLE medicines ADD COLUMN pcs_per_box INT DEFAULT 1 AFTER unit");
+}
+
+// Ensure quantity is DECIMAL(10,2)
+$q_col = $conn->query("SHOW COLUMNS FROM medicines LIKE 'quantity'")->fetch_assoc();
+if ($q_col && strpos(strtolower($q_col['Type']), 'decimal') === false) {
+    $conn->query("ALTER TABLE medicines MODIFY quantity DECIMAL(10,2) DEFAULT 0");
+}
+
 if (!in_array('is_archived', $existing_cols)) {
     $conn->query("ALTER TABLE medicines ADD COLUMN is_archived TINYINT(1) DEFAULT 0 AFTER quantity");
 }
@@ -61,6 +71,11 @@ if (!in_array('remarks', $existing_cols)) {
 $log_cols = $conn->query("SHOW COLUMNS FROM logs");
 $existing_log_cols = [];
 while($c = $log_cols->fetch_assoc()) { $existing_log_cols[] = $c['Field']; }
+
+$lq_col = $conn->query("SHOW COLUMNS FROM logs LIKE 'quantity'")->fetch_assoc();
+if ($lq_col && strpos(strtolower($lq_col['Type']), 'decimal') === false) {
+    $conn->query("ALTER TABLE logs MODIFY quantity DECIMAL(10,2) DEFAULT 0");
+}
 
 if (!in_array('patient_name', $existing_log_cols)) {
     $conn->query("ALTER TABLE logs ADD COLUMN patient_name VARCHAR(100) DEFAULT NULL AFTER action");

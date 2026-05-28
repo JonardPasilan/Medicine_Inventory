@@ -155,7 +155,8 @@ require_once __DIR__ . '/header.php';
             $t = mysqli_real_escape_string($conn, trim($_POST['type']        ?? 'medicine'));
             $c = mysqli_real_escape_string($conn, trim($_POST['category']    ?? 'General'));
             $u = mysqli_real_escape_string($conn, trim($_POST['unit']        ?? 'pcs'));
-            $q = intval($_POST['quantity'] ?? 0);
+            $q = floatval($_POST['quantity'] ?? 0);
+            $ppb = intval($_POST['pcs_per_box'] ?? 1);
             $e = mysqli_real_escape_string($conn, trim($_POST['exp']         ?? ''));
 
             $errors = [];
@@ -172,8 +173,8 @@ require_once __DIR__ . '/header.php';
                 $val_exp = !empty($e) ? "'$e'" : "NULL";
                 // Auto-archive immediately if the entered expiration date is already in the past
                 $is_already_expired = (!empty($e) && strtotime($e) < strtotime(date('Y-m-d'))) ? 1 : 0;
-                $sql = "INSERT INTO medicines (name, label, type, category, unit, batch_number, quantity, expiration_date, is_archived)
-                        VALUES ('$n', '$l', '$t', '$c', '$u', $next_bn, $q, $val_exp, $is_already_expired)";
+                $sql = "INSERT INTO medicines (name, label, type, category, unit, pcs_per_box, batch_number, quantity, expiration_date, is_archived)
+                        VALUES ('$n', '$l', '$t', '$c', '$u', $ppb, $next_bn, $q, $val_exp, $is_already_expired)";
 
                 if ($conn->query($sql)) {
                     $new_id = $conn->insert_id;
@@ -261,10 +262,16 @@ require_once __DIR__ . '/header.php';
                 </div>
             </div>
 
-            <!-- Quantity -->
-            <div class="form-group">
-                <label>Quantity <span class="required">*</span></label>
-                <input type="number" name="quantity" min="0" placeholder="Enter number of units" required>
+            <!-- Quantity & Pieces Per Box -->
+            <div class="form-group" style="display:flex; gap:15px; align-items:flex-end;">
+                <div style="flex:1;">
+                    <label>Quantity <span class="required">*</span></label>
+                    <input type="number" step="0.01" name="quantity" min="0" placeholder="Enter number of units" required>
+                </div>
+                <div style="flex:1; display:none;" id="pcsPerBoxDiv">
+                    <label>Pieces per Box <span class="required">*</span></label>
+                    <input type="number" name="pcs_per_box" id="pcsPerBoxInput" min="1" value="1" placeholder="e.g. 100">
+                </div>
             </div>
 
             <!-- Expiration Date -->
@@ -330,6 +337,18 @@ require_once __DIR__ . '/header.php';
         };
     <?php endif; ?>
 
+    function toggleUnit() {
+        const unit = document.querySelector('input[name="unit"]').value.toLowerCase().trim();
+        const div = document.getElementById('pcsPerBoxDiv');
+        if (unit === 'box' || unit === 'boxes') {
+            div.style.display = 'block';
+        } else {
+            div.style.display = 'none';
+        }
+    }
+
+    document.querySelector('input[name="unit"]').addEventListener('input', toggleUnit);
+
     // Initial check on page load
     document.addEventListener('DOMContentLoaded', () => {
         flatpickr("input[type=date]", {
@@ -337,6 +356,7 @@ require_once __DIR__ . '/header.php';
             dateFormat: "Y-m-d", allowInput: true
         });
         toggleExpiry();
+        toggleUnit();
     });
 </script>
 

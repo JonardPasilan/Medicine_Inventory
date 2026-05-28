@@ -11,26 +11,43 @@ $alert_type  = '';
 
 if (isset($_POST['use'])) {
     $med_name   = mysqli_real_escape_string($conn, trim($_POST['med_name'] ?? ''));
-    $qty_needed = intval($_POST['qty'] ?? 0);
+    $qty_input  = floatval($_POST['qty'] ?? 0);
+    $dispense_unit = mysqli_real_escape_string($conn, trim($_POST['dispense_unit'] ?? 'boxes'));
     $patient    = mysqli_real_escape_string($conn, trim($_POST['patient_name'] ?? ''));
     $prescriber = mysqli_real_escape_string($conn, trim($_POST['prescriber_name'] ?? ''));
     $staff_name = mysqli_real_escape_string($conn, trim($_POST['staff_name'] ?? ''));
+    
+    $dispense_date_raw = trim($_POST['dispense_date'] ?? '');
+    if (empty($dispense_date_raw)) {
+        $dispense_date = date('Y-m-d H:i:s');
+    } else {
+        $dispense_date = $dispense_date_raw . ' ' . date('H:i:s');
+    }
+    $dispense_date = mysqli_real_escape_string($conn, $dispense_date);
 
     if (empty($med_name)) {
         $alert      = "Please select a medicine.";
         $alert_type = "error";
-    } elseif ($qty_needed <= 0) {
-        $alert      = "Please enter a valid quantity (minimum 1 unit).";
+    } elseif ($qty_input <= 0) {
+        $alert      = "Please enter a valid quantity (minimum 0.01 unit).";
         $alert_type = "error";
     } else {
         $chk = $conn->query("
-            SELECT SUM(quantity) AS avail
+            SELECT SUM(quantity) AS avail, MAX(unit) as unit, MAX(pcs_per_box) as pcs_per_box
             FROM medicines
             WHERE name = '$med_name'
               AND (expiration_date >= CURDATE() OR expiration_date IS NULL)
               AND quantity > 0
               AND type IN ('medicine', 'consumable')");
-        $avail = (int)($chk ? $chk->fetch_assoc()['avail'] : 0);
+        $chk_data = $chk ? $chk->fetch_assoc() : null;
+        $avail = (float)($chk_data['avail'] ?? 0);
+        $db_unit = strtolower(trim($chk_data['unit'] ?? 'pcs'));
+        $ppb = (int)($chk_data['pcs_per_box'] ?? 1);
+
+        $qty_needed = $qty_input;
+        if ($dispense_unit === 'pieces' && ($db_unit === 'box' || $db_unit === 'boxes')) {
+            $qty_needed = $qty_input / max(1, $ppb);
+        }
 
         if ($avail < $qty_needed) {
             $alert      = "Insufficient non-expired stock! Only $avail unit(s) available.";
@@ -49,8 +66,8 @@ if (isset($_POST['use'])) {
             $details   = [];
 
             while ($remaining > 0 && ($b = $batches->fetch_assoc())) {
-                $take    = min($remaining, (int)$b['quantity']);
-                $new_qty = (int)$b['quantity'] - $take;
+                $take    = min($remaining, (float)$b['quantity']);
+                $new_qty = (float)$b['quantity'] - $take;
 
                 $conn->query("UPDATE medicines SET quantity = $new_qty WHERE id = {$b['id']}");
                 
@@ -58,8 +75,8 @@ if (isset($_POST['use'])) {
                 $d_val = !empty($prescriber) ? "'$prescriber'" : "NULL";
                 $s_val = !empty($staff_name) ? "'$staff_name'" : "NULL";
                 
-                $conn->query("INSERT INTO logs (medicine_id, quantity, action, patient_name, prescriber_name, staff_name)
-                              VALUES ({$b['id']}, $take, 'Released to patient', $p_val, $d_val, $s_val)");
+                $conn->query("INSERT INTO logs (medicine_id, quantity, action, patient_name, prescriber_name, staff_name, date)
+                              VALUES ({$b['id']}, $take, 'Released to patient', $p_val, $d_val, $s_val, '$dispense_date')");
 
                 $exp_fmt = date('M d, Y', strtotime($b['expiration_date']));
                 $details[] = "Batch #{$b['batch_number']} (Exp: {$exp_fmt}) — {$take} unit(s)";
@@ -67,7 +84,8 @@ if (isset($_POST['use'])) {
             }
 
             $detail_str = implode('<br>• ', $details);
-            $alert      = "<strong>{$qty_needed} unit(s)</strong> of " . htmlspecialchars($med_name) . " dispensed.<br>• {$detail_str}";
+            $dispensed_str = $dispense_unit === 'pieces' ? "<strong>{$qty_input} pieces</strong>" : "<strong>{$qty_needed} unit(s)</strong>";
+            $alert      = "{$dispensed_str} of " . htmlspecialchars($med_name) . " dispensed.<br>• {$detail_str}";
             $alert_type = "success";
         }
     }
@@ -81,7 +99,9 @@ $meds_query = $conn->query("
         SUM(CASE WHEN expiration_date >= CURDATE() OR expiration_date IS NULL THEN quantity ELSE 0 END) AS avail_qty,
         SUM(CASE WHEN expiration_date <  CURDATE() THEN quantity ELSE 0 END) AS expired_qty,
         MIN(CASE WHEN (expiration_date >= CURDATE() OR expiration_date IS NULL) AND quantity > 0
-                 THEN expiration_date ELSE NULL END)                          AS next_exp
+                 THEN expiration_date ELSE NULL END)                          AS next_exp,
+        MAX(unit) as unit,
+        MAX(pcs_per_box) as pcs_per_box
     FROM medicines
     WHERE quantity > 0
       AND is_archived = 0
@@ -369,6 +389,8 @@ $meds_query = $conn->query("
                         'avail'    => $avail,
                         'expired'  => $expired,
                         'next_exp' => $next_exp,
+                        'unit'     => $m['unit'],
+                        'pcs_per_box' => $m['pcs_per_box'],
                         'batches'  => $batches_info,
                     ];
                 }
@@ -409,13 +431,26 @@ $meds_query = $conn->query("
                     <label>Dispensed By (Staff) <span class="required">*</span></label>
                     <input type="text" name="staff_name" placeholder="Your name" required>
                 </div>
+                <div style="flex:1; min-width: 150px;">
+                    <label>Dispense Date <small style="color:#7f8c8d;">(Defaults to today)</small></label>
+                    <input type="date" name="dispense_date" max="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>">
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>Quantity to Dispense <span class="required">*</span></label>
-                <input type="number" name="qty" id="qty" required min="1" placeholder="Select medicine first" disabled oninput="validateQty()">
-                <small id="qtyMsg" style="color:#e74c3c; display:none; margin-top:5px;"></small>
+            <div class="form-group" style="display:flex; gap:15px; align-items:flex-end;">
+                <div style="flex:2;">
+                    <label>Quantity to Dispense <span class="required">*</span></label>
+                    <input type="number" step="0.01" name="qty" id="qty" required min="0.01" placeholder="Select medicine first" disabled oninput="validateQty()">
+                </div>
+                <div style="flex:1; display:none;" id="dispenseUnitGroup">
+                    <label>Unit</label>
+                    <select name="dispense_unit" id="dispenseUnit" onchange="validateQty()">
+                        <option value="pieces">Pieces</option>
+                        <option value="boxes">Boxes</option>
+                    </select>
+                </div>
             </div>
+            <small id="qtyMsg" style="color:#e74c3c; display:none; margin-top:-10px; margin-bottom:15px; display:block;"></small>
 
             <button type="submit" name="use" id="dispenseBtn" class="btn-dispense" disabled>
                 💊 Dispense Medicine
@@ -573,17 +608,37 @@ $meds_query = $conn->query("
         }
 
         qtyInput.disabled = avail <= 0;
-        if (!qtyInput.disabled) { qtyInput.max = avail; qtyInput.value = ''; validateQty(); }
+        
+        const dbUnit = (selectedMedInfo.unit || '').toLowerCase().trim();
+        const dispenseGroup = document.getElementById('dispenseUnitGroup');
+        const dispenseUnit = document.getElementById('dispenseUnit');
+        
+        if (dbUnit === 'box' || dbUnit === 'boxes') {
+            dispenseGroup.style.display = 'block';
+            dispenseUnit.value = 'pieces';
+        } else {
+            dispenseGroup.style.display = 'none';
+        }
+
+        if (!qtyInput.disabled) { qtyInput.value = ''; validateQty(); }
     }
 
     function validateQty() {
-        const qty   = parseInt(document.getElementById('qty').value) || 0;
+        const qtyInput = parseFloat(document.getElementById('qty').value) || 0;
         const avail = selectedMedInfo ? (selectedMedInfo.avail || 0) : 0;
         const msg   = document.getElementById('qtyMsg');
         const btn   = document.getElementById('dispenseBtn');
+        const dbUnit = selectedMedInfo ? (selectedMedInfo.unit || '').toLowerCase().trim() : '';
+        const dispUnit = document.getElementById('dispenseUnitGroup').style.display !== 'none' ? document.getElementById('dispenseUnit').value : 'boxes';
+        
+        let qtyNeeded = qtyInput;
+        if (dispUnit === 'pieces' && (dbUnit === 'box' || dbUnit === 'boxes')) {
+            const ppb = selectedMedInfo.pcs_per_box || 1;
+            qtyNeeded = qtyInput / Math.max(1, ppb);
+        }
 
-        if (qty <= 0) { msg.textContent = '⚠️ Enter at least 1 unit.'; msg.style.display = 'block'; btn.disabled = true; }
-        else if (qty > avail) { msg.textContent = '⚠️ Max available is ' + avail; msg.style.display = 'block'; btn.disabled = true; }
+        if (qtyInput <= 0) { msg.textContent = '⚠️ Enter a valid amount.'; msg.style.display = 'block'; btn.disabled = true; }
+        else if (qtyNeeded > avail) { msg.textContent = '⚠️ Max available is ' + avail + ' units in stock.'; msg.style.display = 'block'; btn.disabled = true; }
         else { msg.style.display = 'none'; btn.disabled = false; }
     }
 

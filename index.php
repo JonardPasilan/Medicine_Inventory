@@ -500,7 +500,12 @@ function renderEquipmentTable($conn, $type, $search) {
             $rep = (int)$row['qty_repair'];
             $rem = htmlspecialchars((string)$row['remarks']);
 
-            echo "<tr>
+            $data_name  = htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8');
+            $data_label = htmlspecialchars((string)$row['label'], ENT_QUOTES, 'UTF-8');
+            $data_brand = htmlspecialchars((string)$row['brand_serial'], ENT_QUOTES, 'UTF-8');
+            $data_ris   = htmlspecialchars((string)$row['ris_id'], ENT_QUOTES, 'UTF-8');
+
+            echo "<tr class='searchable-row' data-name='$data_name' data-label='$data_label' data-brand='$data_brand' data-ris='$data_ris'>
                     <td>$i</td>
                     <td><strong style='color:var(--color-text-primary);'>$name_label</strong></td>
                     <td>$qty <small style='color:var(--color-text-muted);'>$unit</small></td>
@@ -588,7 +593,7 @@ function renderInventoryTable($conn, $type, $search, $filter = '') {
             
             $data_name  = htmlspecialchars($g['name'],         ENT_QUOTES, 'UTF-8');
             $data_label = htmlspecialchars((string)$g['label'], ENT_QUOTES, 'UTF-8');
-            echo "<tr class='group-row' onclick='toggleBatch(\"$gid\")' style='$row_style'
+            echo "<tr class='group-row searchable-row' onclick='toggleBatch(\"$gid\")' style='$row_style'
                       data-name='$data_name' data-label='$data_label'>
                     <td>$i</td>
                     <td>
@@ -751,32 +756,36 @@ function renderInventoryTable($conn, $type, $search, $filter = '') {
         const activeView = document.querySelector('.table-container.active');
         if (!activeView) return;
 
-        const groupRows = activeView.querySelectorAll('tr.group-row');
+        const searchableRows = activeView.querySelectorAll('tr.searchable-row');
         let visible = 0;
 
-        groupRows.forEach(row => {
+        searchableRows.forEach(row => {
             const name  = (row.dataset.name  || '').toLowerCase();
             const label = (row.dataset.label || '').toLowerCase();
-            const match = !q || name.includes(q) || label.includes(q);
+            const brand = (row.dataset.brand || '').toLowerCase();
+            const ris   = (row.dataset.ris   || '').toLowerCase();
+            const match = !q || name.includes(q) || label.includes(q) || brand.includes(q) || ris.includes(q);
 
             row.style.display = match ? '' : 'none';
 
             // Also hide/show the batch sub-rows belonging to this group
-            const gid = row.getAttribute('onclick')?.match(/toggleBatch\("([^"]+)"\)/)?.[1];
-            if (gid) {
-                activeView.querySelectorAll(`[data-grp="${gid}"]`).forEach(sub => {
-                    if (!match) {
-                        sub.style.display = 'none';
-                        sub.classList.remove('expanded');
-                    }
-                });
+            if (row.classList.contains('group-row')) {
+                const gid = row.getAttribute('onclick')?.match(/toggleBatch\("([^"]+)"\)/)?.[1];
+                if (gid) {
+                    activeView.querySelectorAll(`[data-grp="${gid}"]`).forEach(sub => {
+                        if (!match) {
+                            sub.style.display = 'none';
+                            sub.classList.remove('expanded');
+                        }
+                    });
+                }
             }
 
             if (match) visible++;
         });
 
-        if (q && groupRows.length > 0) {
-            countText.textContent = `${visible} of ${groupRows.length} item(s) match "${query.trim()}"`;
+        if (q && searchableRows.length > 0) {
+            countText.textContent = `${visible} of ${searchableRows.length} item(s) match "${query.trim()}"`;
             countBox.classList.add('visible');
         } else {
             countBox.classList.remove('visible');

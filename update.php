@@ -8,7 +8,8 @@ if (isset($_POST['update'])) {
     $t  = $conn->real_escape_string((string)($_POST['type']     ?? 'medicine'));
     $c  = $conn->real_escape_string((string)($_POST['category'] ?? 'General'));
     $u  = $conn->real_escape_string((string)($_POST['unit']     ?? 'pcs'));
-    $q  = intval($_POST['quantity'] ?? 0);
+    $q  = floatval($_POST['quantity'] ?? 0);
+    $ppb = intval($_POST['pcs_per_box'] ?? 1);
     $e  = $conn->real_escape_string((string)($_POST['exp']      ?? ''));
 
     // Guard: equipment types must not go through this handler
@@ -25,6 +26,7 @@ if (isset($_POST['update'])) {
             type='$t',
             category='$c',
             unit='$u',
+            pcs_per_box=$ppb,
             quantity=$q,
             expiration_date=$val_exp
             WHERE id=$id

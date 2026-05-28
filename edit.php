@@ -250,9 +250,15 @@ require_once __DIR__ . '/header.php';
                 <input type="text" name="label" id="descInput" value="<?php echo htmlspecialchars((string)$row['label']); ?>">
             </div>
 
-            <div class="form-group">
-                <label>Quantity <span class="required">*</span></label>
-                <input type="number" name="quantity" id="quantityInput" value="<?php echo (int)$row['quantity']; ?>" min="0" required>
+            <div class="form-group" style="display:flex; gap:15px; align-items:flex-end;">
+                <div style="flex:1;">
+                    <label>Quantity <span class="required">*</span></label>
+                    <input type="number" step="0.01" name="quantity" id="quantityInput" value="<?php echo floatval($row['quantity']); ?>" min="0" required>
+                </div>
+                <div style="flex:1; display:none;" id="pcsPerBoxDiv">
+                    <label>Pieces per Box <span class="required">*</span></label>
+                    <input type="number" name="pcs_per_box" id="pcsPerBoxInput" min="1" value="<?php echo intval($row['pcs_per_box'] ?? 1); ?>" placeholder="e.g. 100">
+                </div>
             </div>
 
             <div class="form-group" id="expGroup">
@@ -300,6 +306,24 @@ require_once __DIR__ . '/header.php';
             });
             
             form.addEventListener('submit', () => { formChanged = false; });
+        }
+
+        function toggleUnit() {
+            const unitInp = document.querySelector('input[name="unit"]');
+            if(unitInp) {
+                const unit = unitInp.value.toLowerCase().trim();
+                const div = document.getElementById('pcsPerBoxDiv');
+                if (unit === 'box' || unit === 'boxes') {
+                    div.style.display = 'block';
+                } else {
+                    div.style.display = 'none';
+                }
+            }
+        }
+        const unitInp = document.querySelector('input[name="unit"]');
+        if(unitInp) {
+            unitInp.addEventListener('input', toggleUnit);
+            toggleUnit();
         }
         
         // Intercept clicks on links

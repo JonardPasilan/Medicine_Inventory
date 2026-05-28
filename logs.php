@@ -2,11 +2,17 @@
 require_once __DIR__ . '/db.php';
 
 // Log Cleanup Logic
-if (isset($_POST['clear_old_logs'])) {
-    $six_months_ago = date('Y-m-d H:i:s', strtotime('-6 months'));
-    $conn->query("DELETE FROM logs WHERE date < '$six_months_ago'");
+if (isset($_POST['delete_all_logs'])) {
+    $conn->query("DELETE FROM logs");
     $deleted_count = $conn->affected_rows;
     header("Location: logs.php?cleaned=$deleted_count");
+    exit();
+}
+
+if (isset($_POST['delete_log_id'])) {
+    $log_id = (int)$_POST['delete_log_id'];
+    $conn->query("DELETE FROM logs WHERE id = $log_id");
+    header("Location: logs.php?deleted=1");
     exit();
 }
 
@@ -381,14 +387,19 @@ require_once __DIR__ . '/header.php';
                 </div>
                 <div style="display:flex; gap:10px;">
                     <button type="submit" name="export" value="csv" class="btn-export">📊 Export to CSV</button>
-                    <button type="button" onclick="confirmLogCleanup()" class="btn-clear-logs">🧹 Clean Up (6mo+)</button>
+                    <button type="button" onclick="confirmLogCleanup()" class="btn-clear-logs">🗑️ Delete All Logs</button>
                 </div>
             </div>
         </form>
 
         <?php if (isset($_GET['cleaned'])): ?>
             <div style="background: var(--color-brand-light); color: var(--color-brand); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; text-align: center; border: 1px solid var(--color-brand);">
-                ✨ Successfully cleaned up <strong><?php echo (int)$_GET['cleaned']; ?></strong> old log entries.
+                ✨ Successfully deleted <strong><?php echo (int)$_GET['cleaned']; ?></strong> log entries.
+            </div>
+        <?php endif; ?>
+        <?php if (isset($_GET['deleted'])): ?>
+            <div style="background: var(--color-brand-light); color: var(--color-brand); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; text-align: center; border: 1px solid var(--color-brand);">
+                ✨ Successfully deleted log entry.
             </div>
         <?php endif; ?>
     </div>
@@ -404,6 +415,7 @@ require_once __DIR__ . '/header.php';
                         <th>Action</th>
                         <th>Details</th>
                         <th>Date &amp; Time</th>
+                        <th></th>
                     </tr>
             </thead>
             <tbody>
@@ -544,6 +556,7 @@ require_once __DIR__ . '/header.php';
                         </div>";
                     }
 
+                    $log_id = $row['id'];
                     echo "<tr>
                         <td style='color:#aaa; font-size:12px;'>{$row_num}</td>
                         <td>{$med_display}</td>
@@ -552,10 +565,16 @@ require_once __DIR__ . '/header.php';
                         <td><span class='badge {$badge_class}'>{$badge_icon} {$act}</span></td>
                         <td>{$details_html}</td>
                         <td class='date-cell'>📅 {$fmt_date}</td>
+                        <td>
+                            <form method='POST' style='display:inline;' onsubmit='return confirm(\"Delete this log entry?\");'>
+                                <input type='hidden' name='delete_log_id' value='{$log_id}'>
+                                <button type='submit' class='btn-clear-logs' style='padding:4px 8px; font-size:12px;' title='Delete log'>🗑️</button>
+                            </form>
+                        </td>
                     </tr>";
                 }
             } else {
-                echo "<tr><td colspan='7' class='no-data'>
+                echo "<tr><td colspan='8' class='no-data'>
                          <div class='icon'>📭</div>
                          <div>No log records found</div>
                          <small style='margin-top:10px; display:block;'>Try adjusting your filters</small>
@@ -586,8 +605,8 @@ require_once __DIR__ . '/header.php';
 <script>
     async function confirmLogCleanup() {
         const confirmed = await showConfirm(
-            "Clean Up Old Logs?",
-            "This will permanently delete all log entries <strong>older than 6 months</strong>. This action cannot be undone. Proceed?"
+            "Delete All Logs?",
+            "This will permanently delete <strong>all log entries</strong>. This action cannot be undone. Proceed?"
         );
 
         if (confirmed) {
@@ -596,7 +615,7 @@ require_once __DIR__ . '/header.php';
             cleanupForm.style.display = 'none';
             const input = document.createElement('input');
             input.type = 'hidden';
-            input.name = 'clear_old_logs';
+            input.name = 'delete_all_logs';
             input.value = '1';
             cleanupForm.appendChild(input);
             document.body.appendChild(cleanupForm);
