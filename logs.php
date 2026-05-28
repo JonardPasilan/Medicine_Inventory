@@ -9,11 +9,15 @@ if (isset($_POST['delete_all_logs'])) {
     exit();
 }
 
-if (isset($_POST['delete_log_id'])) {
-    $log_id = (int)$_POST['delete_log_id'];
-    $conn->query("DELETE FROM logs WHERE id = $log_id");
-    header("Location: logs.php?deleted=1");
-    exit();
+if (isset($_POST['delete_selected_logs']) && !empty($_POST['log_ids'])) {
+    $ids = array_map('intval', $_POST['log_ids']);
+    if (count($ids) > 0) {
+        $ids_str = implode(',', $ids);
+        $conn->query("DELETE FROM logs WHERE id IN ($ids_str)");
+        $deleted_count = $conn->affected_rows;
+        header("Location: logs.php?deleted_selected=$deleted_count");
+        exit();
+    }
 }
 
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
@@ -118,7 +122,7 @@ require_once __DIR__ . '/header.php';
             min-height: 100vh;
         }
 
-        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+        .container { max-width: 95%; margin: 40px auto; padding: 0 20px; }
 
         .header-card {
             background: var(--color-surface);
@@ -271,6 +275,16 @@ require_once __DIR__ . '/header.php';
         }
         .btn-clear-logs:hover { background: hsl(0, 70%, 50%); color: white; transform: translateY(-2px); }
 
+        .btn-delete-selected {
+            padding: 10px 20px; background: transparent;
+            color: #e67e22; border: 1px solid #e67e22;
+            border-radius: var(--radius-sm);
+            cursor: pointer; font-size: 14px; font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+        .btn-delete-selected:hover { background: #e67e22; color: white; transform: translateY(-2px); }
+
         @media (max-width: 768px) {
             .container { margin: 20px auto; }
             .filter-group { min-width: 100%; }
@@ -387,6 +401,7 @@ require_once __DIR__ . '/header.php';
                 </div>
                 <div style="display:flex; gap:10px;">
                     <button type="submit" name="export" value="csv" class="btn-export">📊 Export to CSV</button>
+                    <button type="button" onclick="confirmDeleteSelected()" class="btn-delete-selected" id="btnDeleteSelected" style="display:none;">🗑️ Delete Selected</button>
                     <button type="button" onclick="confirmLogCleanup()" class="btn-clear-logs">🗑️ Delete All Logs</button>
                 </div>
             </div>
@@ -397,27 +412,29 @@ require_once __DIR__ . '/header.php';
                 ✨ Successfully deleted <strong><?php echo (int)$_GET['cleaned']; ?></strong> log entries.
             </div>
         <?php endif; ?>
-        <?php if (isset($_GET['deleted'])): ?>
+        <?php if (isset($_GET['deleted_selected'])): ?>
             <div style="background: var(--color-brand-light); color: var(--color-brand); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; text-align: center; border: 1px solid var(--color-brand);">
-                ✨ Successfully deleted log entry.
+                ✨ Successfully deleted <strong><?php echo (int)$_GET['deleted_selected']; ?></strong> selected log entries.
             </div>
         <?php endif; ?>
     </div>
 
-        <div class="table-container">
-            <table id="logTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Item Details</th>
-                        <th>Expiry / Procured Date</th>
-                        <th>Qty</th>
-                        <th>Action</th>
-                        <th>Details</th>
-                        <th>Date &amp; Time</th>
-                        <th></th>
-                    </tr>
-            </thead>
+        <form method="POST" id="deleteForm">
+            <input type="hidden" name="delete_selected_logs" value="1">
+            <div class="table-container">
+                <table id="logTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                            <th>#</th>
+                            <th>Item Details</th>
+                            <th>Expiry / Procured Date</th>
+                            <th>Qty</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                            <th>Date &amp; Time</th>
+                        </tr>
+                </thead>
             <tbody>
             <?php
             // Pagination settings
@@ -558,6 +575,7 @@ require_once __DIR__ . '/header.php';
 
                     $log_id = $row['id'];
                     echo "<tr>
+                        <td style='text-align: center;'><input type='checkbox' name='log_ids[]' value='{$log_id}' class='log-checkbox' onclick='updateDeleteBtn()'></td>
                         <td style='color:#aaa; font-size:12px;'>{$row_num}</td>
                         <td>{$med_display}</td>
                         <td>{$bexp_disp}</td>
@@ -565,12 +583,6 @@ require_once __DIR__ . '/header.php';
                         <td><span class='badge {$badge_class}'>{$badge_icon} {$act}</span></td>
                         <td>{$details_html}</td>
                         <td class='date-cell'>📅 {$fmt_date}</td>
-                        <td>
-                            <form method='POST' style='display:inline;' onsubmit='return confirm(\"Delete this log entry?\");'>
-                                <input type='hidden' name='delete_log_id' value='{$log_id}'>
-                                <button type='submit' class='btn-clear-logs' style='padding:4px 8px; font-size:12px;' title='Delete log'>🗑️</button>
-                            </form>
-                        </td>
                     </tr>";
                 }
             } else {
@@ -584,6 +596,7 @@ require_once __DIR__ . '/header.php';
             </tbody>
         </table>
     </div>
+    </form>
 
     <?php if ($total_pages > 1): ?>
         <div style="margin-top: 20px; text-align: center;">
@@ -620,6 +633,38 @@ require_once __DIR__ . '/header.php';
             cleanupForm.appendChild(input);
             document.body.appendChild(cleanupForm);
             cleanupForm.submit();
+        }
+    }
+
+    async function confirmDeleteSelected() {
+        const checkboxes = document.querySelectorAll('.log-checkbox:checked');
+        if (checkboxes.length === 0) return;
+        
+        const confirmed = await showConfirm(
+            "Delete Selected Logs?",
+            `Are you sure you want to delete ${checkboxes.length} selected log(s)? This action cannot be undone.`
+        );
+
+        if (confirmed) {
+            document.getElementById('deleteForm').submit();
+        }
+    }
+
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.log-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        updateDeleteBtn();
+    }
+
+    function updateDeleteBtn() {
+        const checkedCount = document.querySelectorAll('.log-checkbox:checked').length;
+        const btn = document.getElementById('btnDeleteSelected');
+        if (checkedCount > 0) {
+            btn.style.display = 'inline-block';
+            btn.innerHTML = `🗑️ Delete Selected (${checkedCount})`;
+        } else {
+            btn.style.display = 'none';
         }
     }
 </script>
