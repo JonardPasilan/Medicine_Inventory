@@ -86,6 +86,15 @@ if (!in_array('prescriber_name', $existing_log_cols)) {
 if (!in_array('staff_name', $existing_log_cols)) {
     $conn->query("ALTER TABLE logs ADD COLUMN staff_name VARCHAR(100) DEFAULT NULL AFTER prescriber_name");
 }
+if (!in_array('edited_by', $existing_log_cols)) {
+    $conn->query("ALTER TABLE logs ADD COLUMN edited_by VARCHAR(100) DEFAULT NULL AFTER staff_name");
+}
+if (!in_array('edited_at', $existing_log_cols)) {
+    $conn->query("ALTER TABLE logs ADD COLUMN edited_at DATETIME DEFAULT NULL AFTER edited_by");
+}
+if (!in_array('dispense_slip_note', $existing_log_cols)) {
+    $conn->query("ALTER TABLE logs ADD COLUMN dispense_slip_note TEXT DEFAULT NULL AFTER edited_at");
+}
 
 // Borrower's Slip Tables
 $conn->query("CREATE TABLE IF NOT EXISTS `borrowers_slips` (
